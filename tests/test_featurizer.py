@@ -22,7 +22,7 @@ class TestMolFeaturizer:
         features = featurizer.featurize_atoms(molecule)
         assert len(features) == num_atoms
         assert isinstance(features, torch.Tensor)
-    
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
