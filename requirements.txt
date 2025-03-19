@@ -1,0 +1,18 @@
+# NN
+torch==2.6.0
+
+# Testing & Linting
+pytest==8.3.5
+flake8==7.1.2
+
+# Core Libraries
+pandas
+numpy
+scipy
+
+# Chemistry & Computational Tools
+rdkit==2024.9.6
+
+# Utilities & Visualization
+tqdm==4.67.1
+matplotlib==3.10.1
