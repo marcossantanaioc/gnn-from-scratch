@@ -24,6 +24,13 @@ class TestMolFeaturizer:
         assert isinstance(features, torch.Tensor)
         assert features.shape == (29, 5)
 
+    def test_featurize_bonds(self, molecule):
+        num_atoms = molecule.GetNumBonds()
+        features = featurizer.featurize_bonds(molecule)
+        assert len(features) == num_atoms
+        assert isinstance(features, torch.Tensor)
+        assert features.shape == (32, 3)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
