@@ -1,0 +1,11 @@
+torch==2.6.0
+pandas
+numpy
+scipy
+rdkit==2024.9.6
+tqdm==4.67.1
+matplotlib==3.10.1
+
+[dev]
+pytest==8.3.5
+flake8==7.1.2

@@ -1,3 +1,20 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: neuralfingerprint
-Version: 0.1
+Version: 0.1.0
+Summary: Featurization method developed by Duvenaud et al 2017.
+Author-email: Marcos Santana <marcosvssantana@gmail.com>
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: torch==2.6.0
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: rdkit==2024.9.6
+Requires-Dist: tqdm==4.67.1
+Requires-Dist: matplotlib==3.10.1
+Provides-Extra: dev
+Requires-Dist: pytest==8.3.5; extra == "dev"
+Requires-Dist: flake8==7.1.2; extra == "dev"
+
+# neural_fingerprint
+This repo implements the method described in Convolutional Networks on Graphs for Learning Molecular Fingerprints
