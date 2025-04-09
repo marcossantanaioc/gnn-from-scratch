@@ -19,7 +19,7 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
         molecule: a Chem.Mol object.
 
     Returns:
-        A tensor of bond features of shape (N, 3), where N is the number of
+        A tensor of bond features of shape (3, N), where N is the number of
         bonds in the molecule.
 
 
@@ -32,7 +32,7 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
         is_in_ring = int(bond.IsInRing())
         raw_features.append((bond_type, is_conjugated, is_in_ring))
 
-    return torch.as_tensor(raw_features)
+    return torch.as_tensor(raw_features).T
 
 
 def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
@@ -44,7 +44,7 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
         molecule: a Chem.Mol object.
 
     Returns:
-        A tensor of atom features of shape (N, 5), where N is the number of
+        A tensor of atom features of shape (5, N), where N is the number of
         bonds in the molecule.
 
 
@@ -59,4 +59,4 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
         is_aromatic = atom.GetIsAromatic()
         features.append([atomic_number, degree, valence,
                         num_hydrogens, is_aromatic])
-    return torch.as_tensor(features)
+    return torch.as_tensor(features).T

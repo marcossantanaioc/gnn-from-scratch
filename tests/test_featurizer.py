@@ -22,14 +22,14 @@ class TestMolFeaturizer:
         features = featurizer.featurize_atoms(molecule)
         assert len(features) == num_atoms
         assert isinstance(features, torch.Tensor)
-        assert features.shape == (29, 5)
+        assert features.shape == (5, 29)
 
     def test_featurize_bonds(self, molecule):
         num_atoms = molecule.GetNumBonds()
         features = featurizer.featurize_bonds(molecule)
         assert len(features) == num_atoms
         assert isinstance(features, torch.Tensor)
-        assert features.shape == (32, 3)
+        assert features.shape == (3, 32)
 
 
 if __name__ == "__main__":
