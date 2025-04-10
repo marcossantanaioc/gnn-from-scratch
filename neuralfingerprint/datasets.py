@@ -27,8 +27,11 @@ class NeuralFingerprintDataset(torch_data.Dataset):
 
         atom_features = featurizer.featurize_atoms(mol).to(torch.float32)
         bond_features = featurizer.featurize_bonds(mol).to(torch.float32)
+        adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
+            torch.float32,
+        )
 
-        return atom_features, bond_features
+        return atom_features, bond_features, adj_matrix
 
     def __getitem__(
         self,
@@ -44,6 +47,8 @@ class NeuralFingerprintDataset(torch_data.Dataset):
 
 
         """
-        atom_features, bond_features = self.transform(self.smiles[idx])
+        atom_features, bond_features, adj_matrix = self.transform(
+            self.smiles[idx],
+        )
         target = self.targets[idx]
-        return atom_features, bond_features, target
+        return (atom_features, bond_features, adj_matrix), target

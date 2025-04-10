@@ -35,17 +35,18 @@ class TestNeuralFingerprintDataset:
         except IndexError:
             pytest.fail("The dataset has zero entries.")
 
-    def test_transform(self, smi):
+    def test_fetch_features_from_dataset(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
-        atom_features, bond_features, target = moldataset[0]
+        (atom_features, bond_features, adj_matrix), target = moldataset[0]
         assert isinstance(target, float)
         assert isinstance(atom_features, torch.Tensor)
         assert atom_features.shape == (29, constants.NUM_ATOM_FEATURES)
         assert isinstance(bond_features, torch.Tensor)
         assert bond_features.shape == (29, 29, constants.NUM_BOND_FEATURES)
+        assert adj_matrix.shape == (29, 29)
 
 
 if __name__ == "__main__":
