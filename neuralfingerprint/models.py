@@ -50,7 +50,7 @@ class VanillaNet(nn.Module):
         return self.output_layer(concat_x).squeeze(-1)
 
 
-class GraphNeuralNet(nn.Module):
+class NeuralGraphFingerprintModel(nn.Module):
     def __init__(
         self,
         num_input_features: int,
