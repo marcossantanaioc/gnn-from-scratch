@@ -1,6 +1,7 @@
 import torch
 from rdkit import Chem
 from torch.utils import data as torch_data
+
 from neuralfingerprint import featurizer
 
 
@@ -29,9 +30,10 @@ class NeuralFingerprintDataset(torch_data.Dataset):
 
         return atom_features, bond_features
 
-    def __getitem__(self, idx) -> tuple[torch.Tensor,
-                                        torch.Tensor,
-                                        torch.Tensor]:
+    def __getitem__(
+        self,
+        idx,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Returns one element from the dataset.
 
         Args:
