@@ -47,7 +47,7 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
     """Generates a tensor of atom features.
 
     Atom features consist of:
-    - Atomic number
+    - Atomic number. We expanded to the whole periodic table.
     - Degree (number of directly bonded atoms)
     - Implicit valence
     - Total number of hydrogen atoms
