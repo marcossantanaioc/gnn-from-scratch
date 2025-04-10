@@ -40,7 +40,7 @@ def test_graphmodel_output_shape(
     atom_feat_dim,
     bond_feat_dim,
 ):
-    model = models.GraphNeuralNet(
+    model = models.NeuralGraphFingerprintModel(
         num_input_features=atom_feat_dim * 2 + bond_feat_dim,
         num_hidden_units=100,
         num_output_units=1,

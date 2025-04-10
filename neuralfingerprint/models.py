@@ -72,13 +72,14 @@ class GraphNeuralNet(nn.Module):
             -1,
         )
 
-        # Concat features
+        # Concat features. This avoids iterating over each atom.
         all_feats = torch.cat([atom_feat_expanded, bond_feats], dim=-1)
 
-        # Mask features using the adjacency matrix. Only neighbors are kept.
+        # Mask features using the adj. matrix.
+        # We zero-out features that are not associated with neighboring atoms.
         neighbor_messages = all_feats * adj_matrix.unsqueeze(-1)
 
-        # Aggregate (e.g. sum over neighbors)
+        # Aggregate neighbor information (e.g. sum over neighbors)
         aggregated = neighbor_messages.sum(
             dim=1,
         )  # shape: [N_atoms, message_dim]
@@ -87,4 +88,5 @@ class GraphNeuralNet(nn.Module):
         out = F.relu(
             self.lin_layer(torch.cat([atom_feats, aggregated], dim=-1)),
         )
+        # Output molecule-level prediction
         return self.out_layer(out).sum(dim=1)
