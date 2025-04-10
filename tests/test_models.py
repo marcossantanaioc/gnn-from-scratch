@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from neuralfingerprint import models
+from graphmodels import models
 
 
 @pytest.mark.parametrize(

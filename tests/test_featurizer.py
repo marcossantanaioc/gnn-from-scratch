@@ -2,7 +2,7 @@ import pytest
 import torch
 from rdkit import Chem
 
-from neuralfingerprint import constants, featurizer
+from graphmodels import constants, featurizer
 
 
 class TestMolFeaturizer:

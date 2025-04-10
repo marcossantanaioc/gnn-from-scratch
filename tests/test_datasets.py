@@ -2,7 +2,7 @@ import pytest
 import torch
 from rdkit import Chem
 
-from neuralfingerprint import constants, datasets
+from graphmodels import constants, datasets
 
 
 class TestNeuralFingerprintDataset:

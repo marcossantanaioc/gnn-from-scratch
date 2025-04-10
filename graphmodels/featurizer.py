@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from rdkit import Chem
 
-from neuralfingerprint import constants
+from graphmodels import constants
 
 
 def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:

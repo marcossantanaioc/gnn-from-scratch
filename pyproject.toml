@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "neuralfingerprint"
+name = "graphmodels"
 version = "0.1.0"
 description = "Featurization method developed by Duvenaud et al 2017."
 authors = [
@@ -29,10 +29,10 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["neuralfingerprint"]  # Ensure this matches your package directory name
+packages = ["graphmodels"]  # Ensure this matches your package directory name
 
 [tool.setuptools.package-data]
-neuralfingerprint = ["*.txt", "*.csv"]  # Adjust if your package includes extra data files
+graphmodels = ["*.txt", "*.csv"]  # Adjust if your package includes extra data files
 
 [tool.ruff]
 line-length = 79

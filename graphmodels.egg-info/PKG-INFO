@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
-Name: neuralfingerprint
+Name: graphmodels
 Version: 0.1.0
 Summary: Featurization method developed by Duvenaud et al 2017.
 Author-email: Marcos Santana <marcosvssantana@gmail.com>
@@ -16,5 +16,5 @@ Provides-Extra: dev
 Requires-Dist: pytest==8.3.5; extra == "dev"
 Requires-Dist: flake8==7.1.2; extra == "dev"
 
-# neural_fingerprint
+# gnn-from-scratch
 This repo implements the method described in Convolutional Networks on Graphs for Learning Molecular Fingerprints

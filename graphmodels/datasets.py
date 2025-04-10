@@ -2,7 +2,7 @@ import torch
 from rdkit import Chem
 from torch.utils import data as torch_data
 
-from neuralfingerprint import featurizer
+from graphmodels import featurizer
 
 
 class NeuralFingerprintDataset(torch_data.Dataset):
