@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
 
@@ -47,3 +48,43 @@ class VanillaNet(nn.Module):
         concat_x = self.activation(torch.cat((atom_x, bond_x), dim=-1))
 
         return self.output_layer(concat_x).squeeze(-1)
+
+
+class GraphNeuralNet(nn.Module):
+    def __init__(
+        self,
+        num_input_features: int,
+        num_hidden_units: int,
+        num_output_units: int,
+    ):
+        super().__init__()
+
+        self.lin_layer = nn.Linear(num_input_features, num_hidden_units)
+        self.out_layer = nn.Linear(num_hidden_units, num_output_units)
+
+    def forward(self, x):
+        atom_feats, bond_feats, adj_matrix = x
+
+        atom_feat_expanded = atom_feats.unsqueeze(1).expand(
+            -1,
+            atom_feats.size()[1],
+            -1,
+            -1,
+        )
+
+        # Concat features
+        all_feats = torch.cat([atom_feat_expanded, bond_feats], dim=-1)
+
+        # Mask features using the adjacency matrix. Only neighbors are kept.
+        neighbor_messages = all_feats * adj_matrix.unsqueeze(-1)
+
+        # Aggregate (e.g. sum over neighbors)
+        aggregated = neighbor_messages.sum(
+            dim=1,
+        )  # shape: [N_atoms, message_dim]
+
+        # Update atom features
+        out = F.relu(
+            self.lin_layer(torch.cat([atom_feats, aggregated], dim=-1)),
+        )
+        return self.out_layer(out).sum(dim=1)

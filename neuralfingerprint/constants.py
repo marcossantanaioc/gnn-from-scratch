@@ -21,7 +21,7 @@ NUM_ATOM_FEATURES: Final[int] = (
     + MAX_ATOMIC_NUMBER
     + ADDITIONAL_ATOM_FEATURES
 )
-
+NUM_FEATURES_GRAPH: Final[int] = (2 * NUM_ATOM_FEATURES) + NUM_BOND_FEATURES
 
 BOND_TYPES: dict[rdchem.BondType, int] = {
     v: k for k, v in rdchem.BondType.values.items()
