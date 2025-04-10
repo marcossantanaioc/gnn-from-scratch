@@ -2,7 +2,7 @@ import pytest
 import torch
 from rdkit import Chem
 
-from neuralfingerprint import datasets, constants
+from neuralfingerprint import constants, datasets
 
 
 class TestNeuralFingerprintDataset:
@@ -20,13 +20,15 @@ class TestNeuralFingerprintDataset:
 
     def test_dataset_len(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
-            smiles=(smi,), targets=(1.0,)
+            smiles=(smi,),
+            targets=(1.0,),
         )
         assert len(moldataset) == 1
 
     def test_fetch_one_from_dataset(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
-            smiles=(smi,), targets=(1.0,)
+            smiles=(smi,),
+            targets=(1.0,),
         )
         try:
             moldataset[0]
@@ -35,7 +37,8 @@ class TestNeuralFingerprintDataset:
 
     def test_transform(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
-            smiles=(smi,), targets=(1.0,)
+            smiles=(smi,),
+            targets=(1.0,),
         )
         atom_features, bond_features, target = moldataset[0]
         assert isinstance(target, float)

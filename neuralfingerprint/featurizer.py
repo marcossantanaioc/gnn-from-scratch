@@ -1,7 +1,8 @@
-from neuralfingerprint import constants
 import torch
 import torch.nn.functional as F  # noqa: N812
 from rdkit import Chem
+
+from neuralfingerprint import constants
 
 
 def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
@@ -10,18 +11,16 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
     bond in the input molecule. Bond features consists of bond type,
     conjugation and information whether its on a ring.
 
-    We use `bond.GetBondTypeAsDouble()` to get a numeric value for each type:
-
-    Single: 1.0
-    Aromatic: 1.5
-    Double: 2.0
-    Triple: 3.0
+    This implementation differs from Duvenaud et al, in that it one-hot encode
+    bond types.
+    For the original implementation, see:
+    https://github.com/HIPS/neural-fingerprint/blob/master/neuralfingerprint/features.py
 
     Args:
         molecule: a Chem.Mol object.
 
     Returns:
-        A tensor of bond features of shape (N, 3), where N is the number of
+        A tensor of bond features of shape (N, 24), where N is the number of
         bonds in the molecule.
 
 
