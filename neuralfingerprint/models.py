@@ -14,9 +14,17 @@ class VanillaNet(nn.Module):
     - Aggregating (via mean pooling) to produce fixed-size vectors
     - Combining these vectors for property prediction
 
+    We implement a simplified approximation of the Neural Graph Fingerprint
+    model by Duvenaud et al., where atom and bond-level features are
+    independently processed through feedforward layers and aggregated to create
+    a graph-level representation.Unlike the original NGFP, this model does not
+    incorporate iterative message-passing or neighborhood-based convolutions,
+    and therefore serves primarily as a baseline or ablation.
+
     The model uses fully connected layers for atom and bond processing,
     followed by concatenation, a non-linearity,and a final output layer for
     regression.
+
     """
 
     def __init__(
