@@ -42,7 +42,7 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
             molecule.GetNumAtoms(),
             molecule.GetNumAtoms(),
             constants.NUM_BOND_FEATURES,
-        )
+        ),
     )
     for bond in molecule.GetBonds():
         i = bond.GetBeginAtomIdx()
