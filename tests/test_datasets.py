@@ -45,7 +45,7 @@ class TestNeuralFingerprintDataset:
         assert isinstance(atom_features, torch.Tensor)
         assert atom_features.shape == (29, constants.NUM_ATOM_FEATURES)
         assert isinstance(bond_features, torch.Tensor)
-        assert bond_features.shape == (32, constants.NUM_BOND_FEATURES)
+        assert bond_features.shape == (29, 29, constants.NUM_BOND_FEATURES)
 
 
 if __name__ == "__main__":

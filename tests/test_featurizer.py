@@ -25,12 +25,23 @@ class TestMolFeaturizer:
         assert isinstance(features, torch.Tensor)
         assert features.shape == (29, constants.NUM_ATOM_FEATURES)
 
+    def test_featurize_one_bond(self, molecule):
+        bond = molecule.GetBonds()[0]
+        features = featurizer._featurize_one_bond(bond)
+        assert len(features) == 24
+        assert isinstance(features, torch.Tensor)
+        assert features.shape == (constants.NUM_BOND_FEATURES,)
+
     def test_featurize_bonds(self, molecule):
-        num_atoms = molecule.GetNumBonds()
+        num_atoms = molecule.GetNumAtoms()
         features = featurizer.featurize_bonds(molecule)
         assert len(features) == num_atoms
         assert isinstance(features, torch.Tensor)
-        assert features.shape == (32, constants.NUM_BOND_FEATURES)
+        assert features.shape == (
+            num_atoms,
+            num_atoms,
+            constants.NUM_BOND_FEATURES,
+        )
 
 
 if __name__ == "__main__":

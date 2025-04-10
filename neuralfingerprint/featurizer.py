@@ -5,7 +5,7 @@ from rdkit import Chem
 from neuralfingerprint import constants
 
 
-def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
+def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
     """Generates a tensor of bond features.
     This function returns a tensor representing bond features for every
     bond in the input molecule. Bond features consists of bond type,
@@ -25,21 +25,33 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
 
 
     """
-    bonds = molecule.GetBonds()
-    raw_features = []
-    for bond in bonds:
-        is_conjugated = torch.tensor(int(bond.GetIsConjugated())).unsqueeze(-1)
-        bond_type = F.one_hot(
-            torch.tensor(constants.BOND_TYPES[bond.GetBondType()]),
-            num_classes=constants.MAX_BOND_TYPES,
+    is_conjugated = torch.tensor(int(bond.GetIsConjugated())).unsqueeze(-1)
+    bond_type = F.one_hot(
+        torch.tensor(constants.BOND_TYPES[bond.GetBondType()]),
+        num_classes=constants.MAX_BOND_TYPES,
+    )
+
+    is_in_ring = torch.tensor(int(bond.IsInRing())).unsqueeze(-1)
+
+    return torch.cat([bond_type, is_conjugated, is_in_ring], dim=-1)
+
+
+def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
+    all_bond_features = torch.zeros(
+        (
+            molecule.GetNumAtoms(),
+            molecule.GetNumAtoms(),
+            constants.NUM_BOND_FEATURES,
         )
+    )
+    for bond in molecule.GetBonds():
+        i = bond.GetBeginAtomIdx()
+        j = bond.GetEndAtomIdx()
+        bond_features = _featurize_one_bond(bond)
 
-        is_in_ring = torch.tensor(int(bond.IsInRing())).unsqueeze(-1)
-
-        bond_feat = torch.cat([bond_type, is_conjugated, is_in_ring], -1)
-        raw_features.append(bond_feat)
-
-    return torch.stack(raw_features)
+        all_bond_features[i, j] = bond_features
+        all_bond_features[j, i] = bond_features
+    return all_bond_features
 
 
 def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
