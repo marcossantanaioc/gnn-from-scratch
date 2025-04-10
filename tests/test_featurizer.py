@@ -1,7 +1,8 @@
-from rdkit import Chem
-import torch
-from neuralfingerprint import featurizer
 import pytest
+import torch
+from rdkit import Chem
+
+from neuralfingerprint import constants, featurizer
 
 
 class TestMolFeaturizer:
@@ -22,14 +23,14 @@ class TestMolFeaturizer:
         features = featurizer.featurize_atoms(molecule)
         assert len(features) == num_atoms
         assert isinstance(features, torch.Tensor)
-        assert features.shape == (29, 5)
+        assert features.shape == (29, constants.NUM_ATOM_FEATURES)
 
     def test_featurize_bonds(self, molecule):
         num_atoms = molecule.GetNumBonds()
         features = featurizer.featurize_bonds(molecule)
         assert len(features) == num_atoms
         assert isinstance(features, torch.Tensor)
-        assert features.shape == (32, 3)
+        assert features.shape == (32, constants.NUM_BOND_FEATURES)
 
 
 if __name__ == "__main__":

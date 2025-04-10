@@ -1,5 +1,7 @@
-from rdkit import Chem
+from neuralfingerprint import constants
 import torch
+import torch.nn.functional as F  # noqa: N812
+from rdkit import Chem
 
 
 def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
@@ -27,36 +29,72 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
     bonds = molecule.GetBonds()
     raw_features = []
     for bond in bonds:
-        is_conjugated = bond.GetIsConjugated()
-        bond_type = int(bond.GetBondTypeAsDouble())
-        is_in_ring = int(bond.IsInRing())
-        raw_features.append((bond_type, is_conjugated, is_in_ring))
+        is_conjugated = torch.tensor(int(bond.GetIsConjugated())).unsqueeze(-1)
+        bond_type = F.one_hot(
+            torch.tensor(constants.BOND_TYPES[bond.GetBondType()]),
+            num_classes=constants.MAX_BOND_TYPES,
+        )
 
-    return torch.as_tensor(raw_features)
+        is_in_ring = torch.tensor(int(bond.IsInRing())).unsqueeze(-1)
+
+        bond_feat = torch.cat([bond_type, is_conjugated, is_in_ring], -1)
+        raw_features.append(bond_feat)
+
+    return torch.stack(raw_features)
 
 
 def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
     """Generates a tensor of atom features.
-    Atom features consists of atomic number, degree (num. bond atoms), valence,
-    total number of hydrogen atoms and an aromaticity flag.
 
+    Atom features consist of:
+    - Atomic number
+    - Degree (number of directly bonded atoms)
+    - Implicit valence
+    - Total number of hydrogen atoms
+    - Aromaticity flag
+
+    For the original implementation, see:
+    https://github.com/HIPS/neural-fingerprint/blob/master/neuralfingerprint/features.py
     Args:
         molecule: a Chem.Mol object.
 
     Returns:
-        A tensor of atom features of shape (N, 5), where N is the number of
+        A tensor of atom features of shape (N, 135), where N is the number of
         bonds in the molecule.
 
 
     """
     atoms = molecule.GetAtoms()
-    features = []
+    raw_features = []
     for atom in atoms:
-        atomic_number = atom.GetAtomicNum()
-        degree = atom.GetDegree()
-        valence = atom.GetImplicitValence()
-        num_hydrogens = atom.GetTotalNumHs()
-        is_aromatic = atom.GetIsAromatic()
-        features.append([atomic_number, degree, valence,
-                        num_hydrogens, is_aromatic])
-    return torch.as_tensor(features)
+        atomic_number_one_hot = F.one_hot(
+            torch.tensor(atom.GetAtomicNum()),
+            num_classes=constants.MAX_ATOMIC_NUMBER,
+        )
+        degree_one_hot = F.one_hot(
+            torch.tensor(atom.GetDegree()),
+            num_classes=constants.MAX_DEGREE,
+        )
+        valence_one_hot = F.one_hot(
+            torch.tensor(atom.GetImplicitValence()),
+            num_classes=constants.MAX_VALENCE,
+        )
+        num_hydrogens_one_hot = F.one_hot(
+            torch.tensor(atom.GetTotalNumHs()),
+            num_classes=constants.MAX_HYDROGEN_ATOMS,
+        )
+        is_aromatic = torch.tensor(atom.GetIsAromatic()).unsqueeze(-1)
+
+        atom_feat = torch.cat(
+            [
+                atomic_number_one_hot,
+                degree_one_hot,
+                valence_one_hot,
+                num_hydrogens_one_hot,
+                is_aromatic,
+            ],
+            -1,
+        )
+        raw_features.append(atom_feat)
+
+    return torch.stack(raw_features)

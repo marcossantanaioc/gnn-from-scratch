@@ -33,3 +33,8 @@ packages = ["neuralfingerprint"]  # Ensure this matches your package directory n
 
 [tool.setuptools.package-data]
 neuralfingerprint = ["*.txt", "*.csv"]  # Adjust if your package includes extra data files
+
+[tool.ruff]
+line-length = 79
+extend-select = ["E501"]  # E501 = line too long
+fix = true

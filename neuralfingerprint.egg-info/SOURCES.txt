@@ -1,10 +1,15 @@
 README.md
 pyproject.toml
 neuralfingerprint/__init__.py
+neuralfingerprint/constants.py
+neuralfingerprint/datasets.py
 neuralfingerprint/featurizer.py
+neuralfingerprint/models.py
 neuralfingerprint.egg-info/PKG-INFO
 neuralfingerprint.egg-info/SOURCES.txt
 neuralfingerprint.egg-info/dependency_links.txt
 neuralfingerprint.egg-info/requires.txt
 neuralfingerprint.egg-info/top_level.txt
+tests/test_datasets.py
 tests/test_featurizer.py
+tests/test_models.py

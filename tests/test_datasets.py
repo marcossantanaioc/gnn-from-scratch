@@ -1,7 +1,8 @@
-from rdkit import Chem
-import torch
-from neuralfingerprint import datasets
 import pytest
+import torch
+from rdkit import Chem
+
+from neuralfingerprint import datasets, constants
 
 
 class TestNeuralFingerprintDataset:
@@ -19,12 +20,14 @@ class TestNeuralFingerprintDataset:
 
     def test_dataset_len(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
-            smiles=(smi, ), targets=(1.0,))
+            smiles=(smi,), targets=(1.0,)
+        )
         assert len(moldataset) == 1
 
     def test_fetch_one_from_dataset(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
-            smiles=(smi, ), targets=(1.0,))
+            smiles=(smi,), targets=(1.0,)
+        )
         try:
             moldataset[0]
         except IndexError:
@@ -32,13 +35,14 @@ class TestNeuralFingerprintDataset:
 
     def test_transform(self, smi):
         moldataset = datasets.NeuralFingerprintDataset(
-            smiles=(smi, ), targets=(1.0,))
+            smiles=(smi,), targets=(1.0,)
+        )
         atom_features, bond_features, target = moldataset[0]
         assert isinstance(target, float)
         assert isinstance(atom_features, torch.Tensor)
-        assert atom_features.shape == (29, 5)
+        assert atom_features.shape == (29, constants.NUM_ATOM_FEATURES)
         assert isinstance(bond_features, torch.Tensor)
-        assert bond_features.shape == (32, 3)
+        assert bond_features.shape == (32, constants.NUM_BOND_FEATURES)
 
 
 if __name__ == "__main__":
