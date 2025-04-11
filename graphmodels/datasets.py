@@ -1,8 +1,18 @@
 import torch
 from rdkit import Chem
 from torch.utils import data as torch_data
-
+import dataclasses
 from graphmodels import featurizer
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class NeuralFingerprintEntry:
+    """Class to store input data for neuralgraph fingerprint."""
+
+    atom_features: torch.Tensor
+    bond_features: torch.Tensor
+    adj_matrix: torch.Tensor
+    target: torch.Tensor
 
 
 class NeuralFingerprintDataset(torch_data.Dataset):
@@ -51,4 +61,9 @@ class NeuralFingerprintDataset(torch_data.Dataset):
             self.smiles[idx],
         )
         target = torch.tensor(self.targets[idx])
-        return (atom_features, bond_features, adj_matrix), target
+        return NeuralFingerprintEntry(
+            atom_features=atom_features,
+            bond_features=bond_features,
+            target=target,
+            adj_matrix=adj_matrix,
+        )

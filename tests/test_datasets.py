@@ -40,13 +40,21 @@ class TestNeuralFingerprintDataset:
             smiles=(smi,),
             targets=(1.0,),
         )
-        (atom_features, bond_features, adj_matrix), target = moldataset[0]
-        assert isinstance(target, torch.Tensor)
-        assert isinstance(atom_features, torch.Tensor)
-        assert atom_features.shape == (29, constants.NUM_ATOM_FEATURES)
-        assert isinstance(bond_features, torch.Tensor)
-        assert bond_features.shape == (29, 29, constants.NUM_BOND_FEATURES)
-        assert adj_matrix.shape == (29, 29)
+        input_entry = moldataset[0]
+        assert isinstance(input_entry, datasets.NeuralFingerprintEntry)
+        assert isinstance(input_entry.target, torch.Tensor)
+        assert isinstance(input_entry.atom_features, torch.Tensor)
+        assert input_entry.atom_features.shape == (
+            29,
+            constants.NUM_ATOM_FEATURES,
+        )
+        assert isinstance(input_entry.bond_features, torch.Tensor)
+        assert input_entry.bond_features.shape == (
+            29,
+            29,
+            constants.NUM_BOND_FEATURES,
+        )
+        assert input_entry.adj_matrix.shape == (29, 29)
 
 
 if __name__ == "__main__":

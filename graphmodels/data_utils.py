@@ -1,11 +1,11 @@
 import torch
 from torch.nn import F
 
+from graphmodels import datasets
+
 
 def neuralgraph_longest_collate(
-    batch: list[
-        tuple[tuple[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
-    ],
+    batch: list[datasets.NeuralFingerprintEntry],
     max_num_atoms: int,
 ):
     """
@@ -30,24 +30,24 @@ def neuralgraph_longest_collate(
     all_targets = []
 
     # Get max number of atoms in data
-    for (atom_feats, bond_feats, adj_matrix), target in batch:
-        num_to_pad = max_num_atoms - atom_feats.shape[0]
+    for entry in batch:
+        num_to_pad = max_num_atoms - entry.atom_features.shape[0]
         atom_feats_padded = F.pad(
-            atom_feats,
+            entry.atom_features,
             pad=(0, 0, 0, num_to_pad),
             value=0,
         )
         bond_feats_padded = F.pad(
-            bond_feats,
+            entry.bond_features,
             pad=(0, 0, 0, num_to_pad, 0, num_to_pad),
             value=0,
         )
         adj_matrix_padded = F.pad(
-            adj_matrix,
+            entry.adj_matrix,
             pad=(0, num_to_pad, 0, num_to_pad),
             value=0,
         )
-        all_targets.append(target)
+        all_targets.append(entry.target)
 
         all_bond_features.append(bond_feats_padded)
         all_adj_matrices.append(adj_matrix_padded)
