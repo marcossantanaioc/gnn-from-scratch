@@ -44,7 +44,10 @@ class TestMolFeaturizer:
         ],
     )
     def test_featurize_bonds(
-        self, input_smiles, num_atoms, expected_feature_size
+        self,
+        input_smiles,
+        num_atoms,
+        expected_feature_size,
     ):
         mol = Chem.MolFromSmiles(input_smiles)
         features = featurizer.featurize_bonds(mol)
@@ -58,9 +61,16 @@ class TestMolFeaturizer:
         # Test no bond case.
         if num_atoms == 1:
             expected_t = torch.zeros(
-                (num_atoms, num_atoms, constants.NUM_BOND_FEATURES)
+                (
+                    num_atoms,
+                    num_atoms,
+                    constants.NUM_BOND_FEATURES,
+                ),
             )
-            torch.testing.assert_close(features, expected_t)
+            torch.testing.assert_close(
+                features,
+                expected_t,
+            )
 
     def test_featurize_molecule_with_no_atoms(self):
         invalid_mol = Chem.MolFromSmiles("")

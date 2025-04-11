@@ -1,5 +1,5 @@
 import torch
-from torch.nn import F
+from torch.nn import functional as F  # noqa: N812
 
 from graphmodels import datasets
 
