@@ -5,6 +5,10 @@ from rdkit import Chem
 from graphmodels import constants
 
 
+class NoAtomError(Exception):
+    pass
+
+
 def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
     """Generates a tensor of bond features.
     This function returns a tensor representing bond features for every
@@ -84,6 +88,9 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
 
 
     """
+    if molecule.GetNumAtoms() == 0:
+        raise NoAtomError("Cannot featurize a molecule with no atoms.")
+
     atoms = molecule.GetAtoms()
     raw_features = []
     for atom in atoms:

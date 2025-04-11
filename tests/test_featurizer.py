@@ -62,6 +62,11 @@ class TestMolFeaturizer:
             )
             torch.testing.assert_close(features, expected_t)
 
+    def test_featurize_molecule_with_no_atoms(self):
+        invalid_mol = Chem.MolFromSmiles("")
+        with pytest.raises(featurizer.NoAtomError):
+            featurizer.featurize_atoms(invalid_mol)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
