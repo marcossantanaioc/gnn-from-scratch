@@ -41,7 +41,7 @@ class TestNeuralFingerprintDataset:
             targets=(1.0,),
         )
         (atom_features, bond_features, adj_matrix), target = moldataset[0]
-        assert isinstance(target, float)
+        assert isinstance(target, torch.Tensor)
         assert isinstance(atom_features, torch.Tensor)
         assert atom_features.shape == (29, constants.NUM_ATOM_FEATURES)
         assert isinstance(bond_features, torch.Tensor)
