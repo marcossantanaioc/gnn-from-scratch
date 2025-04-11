@@ -50,5 +50,5 @@ class NeuralFingerprintDataset(torch_data.Dataset):
         atom_features, bond_features, adj_matrix = self.transform(
             self.smiles[idx],
         )
-        target = self.targets[idx]
+        target = torch.tensor(self.targets[idx])
         return (atom_features, bond_features, adj_matrix), target
