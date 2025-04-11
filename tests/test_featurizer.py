@@ -32,16 +32,35 @@ class TestMolFeaturizer:
         assert isinstance(features, torch.Tensor)
         assert features.shape == (constants.NUM_BOND_FEATURES,)
 
-    def test_featurize_bonds(self, molecule):
-        num_atoms = molecule.GetNumAtoms()
-        features = featurizer.featurize_bonds(molecule)
-        assert len(features) == num_atoms
+    @pytest.mark.parametrize(
+        "input_smiles, num_atoms, expected_feature_size",
+        [
+            (
+                "C",
+                1,
+                1,
+            ),
+            ("O=C1OC(CN1c1ccc(cc1)N1CCOCC1=O)CNC(=O)c1ccc(s1)Cl", 29, 29),
+        ],
+    )
+    def test_featurize_bonds(
+        self, input_smiles, num_atoms, expected_feature_size
+    ):
+        mol = Chem.MolFromSmiles(input_smiles)
+        features = featurizer.featurize_bonds(mol)
+        assert len(features) == expected_feature_size
         assert isinstance(features, torch.Tensor)
         assert features.shape == (
-            num_atoms,
-            num_atoms,
+            expected_feature_size,
+            expected_feature_size,
             constants.NUM_BOND_FEATURES,
         )
+        # Test no bond case.
+        if num_atoms == 1:
+            expected_t = torch.zeros(
+                (num_atoms, num_atoms, constants.NUM_BOND_FEATURES)
+            )
+            torch.testing.assert_close(features, expected_t)
 
 
 if __name__ == "__main__":
