@@ -3,7 +3,31 @@ from torch.nn import functional as F  # noqa: N812
 
 from graphmodels import datasets
 
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class Batch:
+    adj_matrix: torch.Tensor
+    edge_index: torch.Tensor
+    atom_features: torch.Tensor
+    targets: torch.Tensor
 
+    def to_dict(self):
+        return dataclasses.asdict(self)
+      
+def neuralgraph_collate_diag(batch):
+    # Build batch vector
+    num_atoms_per_mol = [nf.atom_features.size(0) for nf in batch]
+    batch_vector = torch.cat([
+        torch.full((n,), i, dtype=torch.long)
+        for i, n in enumerate(num_atoms_per_mol)
+    ])  # [total_atoms], values in [0, batch_size-1]
+    
+    all_adj_matrix = torch.block_diag(*[x.adj_matrix for x in batch])
+    all_atom_features = torch.concat([x.atom_features for x in batch], dim=0)
+    targets = torch.stack([x.target for x in batch])
+    
+    return Batch(adj_matrix=all_adj_matrix, edge_index=batch_vector, atom_features=all_atom_features, targets=targets)
+
+  
 def neuralgraph_longest_collate(
     batch: list[datasets.NeuralFingerprintEntry],
     max_num_atoms: int,
