@@ -1,3 +1,5 @@
+# NN
+torch==2.6.0
 
 # Testing & Linting
 pytest==8.3.5
