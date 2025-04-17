@@ -13,8 +13,9 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 dependencies = [
-    "torch==2.6.0",
     "pandas",
+    "etils",
+    "importlib_resources",
     "numpy",
     "scipy",
     "rdkit==2024.9.6",
