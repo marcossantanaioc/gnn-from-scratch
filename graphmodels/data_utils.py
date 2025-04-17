@@ -26,7 +26,7 @@ def neuralgraph_collate_diag(batch):
     all_atom_features = torch.concat([x.atom_features for x in batch], dim=0)
     targets = torch.stack([x.target for x in batch])
     
-    return Batch(adj_matrix=all_adj_matrix, edge_index=batch_vector, atom_features=all_atom_features, targets=targets)
+    return NeuralGraphFingerprintBatch(adj_matrix=all_adj_matrix, edge_index=batch_vector, atom_features=all_atom_features, targets=targets)
 
   
 def neuralgraph_longest_collate(
