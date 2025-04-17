@@ -1,10 +1,11 @@
 import torch
 from torch.nn import functional as F  # noqa: N812
-
+import dataclasses
 from graphmodels import datasets
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
-class Batch:
+class NeuralGraphFingerprintBatch:
+    """Store batch information for the neural graph fingerprint model."""
     adj_matrix: torch.Tensor
     edge_index: torch.Tensor
     atom_features: torch.Tensor
