@@ -126,3 +126,82 @@ class UpdateLayer(nn.Module):
         )
 
         return self.output_layer(F.relu(updated_nodes))
+
+
+class ReadoutLayer(nn.Module):
+    """Aggregates node features to obtain a graph-level representation
+    suitable for graph-level tasks within a Message Passing Neural Network
+    (MPNN) framework.
+
+    This layer first applies a multi-layer perceptron (MLP) to each node's
+    feature vector. Then, it aggregates these transformed node features for
+    each graph in the batch using summation to produce a single
+    embedding vector representing the entire graph. Finally, it applies a
+    linear layer to this graph embedding to obtain the output for the
+    graph-level task.
+
+    Args:
+        n_input_features (int): The dimensionality of the input node features.
+        n_hidden_features (int): The dimensionality of the hidden layers within
+            the MLP applied to each node.
+        n_out_features (int): The dimensionality of the final output graph
+            embeddings.
+        num_layers (int, optional): The number of hidden layers in the MLP
+            applied to each node. Defaults to 2.
+
+    Inputs:
+        x (tuple of torch.Tensor): A tuple containing the following tensors:
+            - updated_node_features (torch.Tensor of shape (N, F_node)): Tensor
+              containing the final feature vectors for all nodes in the batch
+              after message passing and update steps, where N is the total
+              number of nodes and F_node is the dimensionality of the node
+              features (should match n_input_features).
+            - batch_vector (torch.Tensor of shape (N,)): A 1D tensor where each
+              element indicates the graph index (within the batch) to which the
+              corresponding node belongs.
+
+    Outputs:
+        torch.Tensor of shape (B, n_out_features): Tensor containing the
+        graph-level embeddings for each graph in the batch, where B is the
+        number of graphs in the batch (determined by the maximum value in
+        `batch_vector` + 1).
+    """
+
+    def __init__(
+        self,
+        n_input_features: int,
+        n_hidden_features: int,
+        n_out_features: int,
+        num_layers: int = 2,
+    ):
+        super().__init__()
+        layers = []
+        for i in range(num_layers):
+            if i == 0:
+                layers.extend(
+                    [nn.Linear(n_input_features, n_hidden_features), nn.ReLU()]
+                )
+            else:
+                layers.extend(
+                    [
+                        nn.Linear(n_hidden_features, n_hidden_features),
+                        nn.ReLU(),
+                    ]
+                )
+
+        self.readout = nn.Sequential(*layers)
+        self.output_layer = nn.Linear(n_hidden_features, n_out_features)
+
+    def forward(self, x):
+        updated_node_features, batch_vector = x
+
+        readout = self.readout(updated_node_features)
+        
+        num_batches = int(batch_vector.max()) + 1
+        emb_dim = readout.size(-1)
+
+        mol_embeddings = torch.zeros(num_batches, emb_dim).to(readout.device)
+
+        mol_embeddings.index_add_(0, batch_vector, readout)
+
+        return self.output_layer(mol_embeddings)

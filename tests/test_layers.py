@@ -104,7 +104,7 @@ class TestLayers:
             == num_layers
         )
 
-    def test_edge_layer_output_shape(self, smi):
+    def test_update_layer_output_shape(self, smi):
         moldataset = datasets.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -127,5 +127,56 @@ class TestLayers:
         assert out.shape == input_entry.atom_features.shape
 
 
+    @pytest.mark.parametrize(
+        "n_input_features, n_hidden_features, n_out_features, num_layers",
+        [
+            (24, 200, 136, 2),
+            (50, 512, 20, 3),
+        ],
+    )
+    def test_readout_layer_number_of_layers(
+        self,
+        n_input_features,
+        n_hidden_features,
+        n_out_features,
+        num_layers,
+    ):
+        readout_network = layers.ReadoutLayer(
+            n_input_features=n_input_features,
+            n_hidden_features=n_hidden_features,
+            n_out_features=n_out_features,
+            num_layers=num_layers,
+        )
+        assert (
+            len(
+                [
+                    l
+                    for l in readout_network.readout.modules()
+                    if isinstance(l, torch.nn.Linear)
+                ]
+            )
+            == num_layers
+        )
+
+    def test_readout_layer_output_shape(self, smi):
+        moldataset = datasets.MPNNDataset(
+            smiles=(smi,),
+            targets=(1.0,),
+        )
+
+        input_entry = moldataset[0]
+
+        readout_network = layers.ReadoutLayer(
+            n_input_features=136,
+            n_hidden_features=512,
+            n_out_features=1,
+            num_layers=3,
+        )
+        batch_vector = torch.zeros(input_entry.atom_features.size(0)).to(torch.int32)
+        
+        out = readout_network((input_entry.atom_features, batch_vector))
+        
+        assert out.shape == (1, 1)
+        
 if __name__ == "__main__":
     pytest.main([__file__])
