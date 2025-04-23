@@ -82,30 +82,33 @@ def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
 
         all_bond_features[i, j] = bond_features
         all_bond_features[j, i] = bond_features
-    return all_bond_features
+    return all_bond_features.to(torch.float32)
 
 
 def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
-  """Generates a compact tensor of bond features for a given molecule.
+    """Generates a compact tensor of bond features for a given molecule.
 
-  This function iterates through each bond in the input `molecule` and
-  calculates a set of features for it. The resulting tensor has a shape of
-  (B, F), where:
+    This function iterates through each bond in the input `molecule` and
+    calculates a set of features for it. The resulting tensor has a shape of
+    (B, F), where:
 
-  - B: represents the total number of bonds in the molecule.
-  - F: is the dimensionality of the bond features (currently 24).
+    - B: represents the total number of bonds in the molecule.
+    - F: is the dimensionality of the bond features (currently 24).
 
-  This function provides a more memory-efficient representation of bond
-  features compared to `featurize_bonds_per_atom`. While
-  `featurize_bonds_per_atom` creates an (N, N, F) tensor (where N is the
-  number of atoms), this function directly stores the features for each
-  existing bond in a (B, F) tensor.
-  """
-
-  for bond in mol.GetBonds():
-    feats = featurizer._featurize_one_bond(bond)
-    bond_features.append(feats)
-  return torch.stack(bond_features).to(torch.float32)
+    This function provides a more memory-efficient representation of bond
+    features compared to `featurize_bonds_per_atom`. While
+    `featurize_bonds_per_atom` creates an (N, N, F) tensor (where N is the
+    number of atoms), this function directly stores the features for each
+    existing bond in a (B, F) tensor.
+    """
+    if molecule.GetNumBonds() == 0:
+        return torch.zeros(1, constants.NUM_BOND_FEATURES).to(torch.float32)
+    
+    bond_features = []
+    for bond in molecule.GetBonds():
+        feats = _featurize_one_bond(bond)
+        bond_features.append(feats)
+    return torch.stack(bond_features).to(torch.float32)
 
 
 def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
@@ -126,8 +129,6 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
     Returns:
         A tensor of atom features of shape (N, 135), where N is the number of
         bonds in the molecule.
-
-
     """
     if molecule.GetNumAtoms() == 0:
         raise NoAtomError("Cannot featurize a molecule with no atoms.")
@@ -165,4 +166,4 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
         )
         raw_features.append(atom_feat)
 
-    return torch.stack(raw_features)
+    return torch.stack(raw_features).to(torch.float32)
