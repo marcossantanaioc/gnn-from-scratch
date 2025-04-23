@@ -40,7 +40,7 @@ def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
     return torch.cat([bond_type, is_conjugated, is_in_ring], dim=-1)
 
 
-def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
+def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
     # Deal with cases like Methane (smiles = "C")
     if molecule.GetNumBonds() == 0:
         return torch.zeros(

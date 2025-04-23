@@ -36,7 +36,7 @@ class NeuralFingerprintDataset(torch_data.Dataset):
         mol = Chem.MolFromSmiles(smiles)
 
         atom_features = featurizer.featurize_atoms(mol).to(torch.float32)
-        bond_features = featurizer.featurize_bonds(mol).to(torch.float32)
+        bond_features = featurizer.featurize_bonds_per_atom(mol).to(torch.float32)
         adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
             torch.float32,
         )

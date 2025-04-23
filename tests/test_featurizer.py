@@ -43,14 +43,14 @@ class TestMolFeaturizer:
             ("O=C1OC(CN1c1ccc(cc1)N1CCOCC1=O)CNC(=O)c1ccc(s1)Cl", 29, 29),
         ],
     )
-    def test_featurize_bonds(
+    def test_featurize_bonds_per_atom(
         self,
         input_smiles,
         num_atoms,
         expected_feature_size,
     ):
         mol = Chem.MolFromSmiles(input_smiles)
-        features = featurizer.featurize_bonds(mol)
+        features = featurizer.featurize_bonds_per_atom(mol)
         assert len(features) == expected_feature_size
         assert isinstance(features, torch.Tensor)
         assert features.shape == (
