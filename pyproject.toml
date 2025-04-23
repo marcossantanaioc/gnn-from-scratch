@@ -38,5 +38,5 @@ graphmodels = ["*.txt", "*.csv"]  # Adjust if your package includes extra data f
 
 [tool.ruff]
 line-length = 79
-extend-select = ["E501"]  # E501 = line too long
+lint.extend-select = ["E501"]  # E501 = line too long
 fix = true

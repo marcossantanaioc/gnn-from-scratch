@@ -3,6 +3,7 @@ import torch
 
 from graphmodels import models
 
+
 @pytest.mark.parametrize(
     "n_input_features, n_hidden_units, n_output_units, radius, batch_size, num_atoms",
     [
@@ -12,7 +13,12 @@ from graphmodels import models
     ],  # Add multiple test cases
 )
 def test_neural_graph_fingerprint_model_output_shape(
-    n_input_features, n_hidden_units, n_output_units, radius, batch_size, num_atoms
+    n_input_features,
+    n_hidden_units,
+    n_output_units,
+    radius,
+    batch_size,
+    num_atoms,
 ):
     """
     Test case to verify the output shape of the NeuralGraphFingerprintModel.
@@ -50,7 +56,6 @@ def test_neural_graph_fingerprint_model_output_shape(
         f"radius={radius}, batch_size={batch_size}, num_atoms={num_atoms}"
     )
     print("Test passed: Output shape is correct!")
-
 
 
 if __name__ == "__main__":

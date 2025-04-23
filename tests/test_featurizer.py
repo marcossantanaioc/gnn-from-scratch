@@ -86,7 +86,6 @@ class TestMolFeaturizer:
         ],
     )
     def test_featurize_bonds(self, input_smiles, expected_size):
-
         mol = Chem.MolFromSmiles(input_smiles)
         features = featurizer.featurize_bonds(mol)
         assert len(features) == expected_size
@@ -95,6 +94,7 @@ class TestMolFeaturizer:
             expected_size,
             constants.NUM_BOND_FEATURES,
         )
-    
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

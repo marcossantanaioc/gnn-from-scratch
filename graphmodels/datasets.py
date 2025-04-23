@@ -14,6 +14,7 @@ class NeuralFingerprintEntry:
     adj_matrix: torch.Tensor
     target: torch.Tensor
 
+
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class MPNNEntry:
     """Class to store input data for MPNN v1."""
@@ -49,9 +50,10 @@ class MPNNDataset(torch_data.Dataset):
 
         bond_features = featurizer.featurize_bonds(mol)
 
-        
-        adj_matrix = torch.tril(torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(torch.float32))
-        
+        adj_matrix = torch.tril(
+            torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(torch.float32)
+        )
+
         return atom_features, bond_features, adj_matrix
 
     def __getitem__(
@@ -72,14 +74,15 @@ class MPNNDataset(torch_data.Dataset):
             self.smiles[idx],
         )
         target = torch.tensor(self.targets[idx])
-        edge_indices = torch.nonzero(adj_matrix)[:, [1,0]]
+        edge_indices = torch.nonzero(adj_matrix)[:, [1, 0]]
         return MPNNEntry(
             atom_features=atom_features,
             bond_features=bond_features,
             target=target,
             adj_matrix=adj_matrix,
-            edge_indices = edge_indices,
+            edge_indices=edge_indices,
         )
+
 
 class NeuralFingerprintDataset(torch_data.Dataset):
     """Creates a molecule dataset based on neural fingerprints."""
@@ -102,7 +105,9 @@ class NeuralFingerprintDataset(torch_data.Dataset):
         mol = Chem.MolFromSmiles(smiles)
 
         atom_features = featurizer.featurize_atoms(mol).to(torch.float32)
-        bond_features = featurizer.featurize_bonds_per_atom(mol).to(torch.float32)
+        bond_features = featurizer.featurize_bonds_per_atom(mol).to(
+            torch.float32
+        )
         adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
             torch.float32,
         )

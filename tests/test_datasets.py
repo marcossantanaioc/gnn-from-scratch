@@ -56,6 +56,7 @@ class TestNeuralFingerprintDataset:
         )
         assert input_entry.adj_matrix.shape == (29, 29)
 
+
 class TestMPNNDataset:
     """
     Pytests
@@ -91,10 +92,10 @@ class TestMPNNDataset:
             smiles=(smi,),
             targets=(1.0,),
         )
-        
+
         input_entry = moldataset[0]
         num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
-        
+
         assert isinstance(input_entry, datasets.MPNNEntry)
         assert isinstance(input_entry.target, torch.Tensor)
         assert isinstance(input_entry.atom_features, torch.Tensor)
@@ -109,6 +110,7 @@ class TestMPNNDataset:
         )
         assert input_entry.adj_matrix.shape == (29, 29)
         assert input_entry.edge_indices.shape == (num_bonds, 2)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

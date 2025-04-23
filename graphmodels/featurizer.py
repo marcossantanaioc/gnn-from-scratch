@@ -103,7 +103,7 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
     """
     if molecule.GetNumBonds() == 0:
         return torch.zeros(1, constants.NUM_BOND_FEATURES).to(torch.float32)
-    
+
     bond_features = []
     for bond in molecule.GetBonds():
         feats = _featurize_one_bond(bond)
