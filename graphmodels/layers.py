@@ -196,7 +196,7 @@ class ReadoutLayer(nn.Module):
         updated_node_features, batch_vector = x
 
         readout = self.readout(updated_node_features)
-        
+
         num_batches = int(batch_vector.max()) + 1
         emb_dim = readout.size(-1)
 

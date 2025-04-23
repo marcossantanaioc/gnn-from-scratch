@@ -102,6 +102,7 @@ class MPNNv1(nn.Module):
     Returns:
         torch.Tensor: The graph-level output tensor, shape [num_graphs, n_out_features].
     """
+
     def __init__(
         self,
         n_node_features: int,

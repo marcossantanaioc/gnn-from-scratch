@@ -126,7 +126,6 @@ class TestLayers:
         )
         assert out.shape == input_entry.atom_features.shape
 
-
     @pytest.mark.parametrize(
         "n_input_features, n_hidden_features, n_out_features, num_layers",
         [
@@ -172,11 +171,14 @@ class TestLayers:
             n_out_features=1,
             num_layers=3,
         )
-        batch_vector = torch.zeros(input_entry.atom_features.size(0)).to(torch.int32)
-        
+        batch_vector = torch.zeros(input_entry.atom_features.size(0)).to(
+            torch.int32
+        )
+
         out = readout_network((input_entry.atom_features, batch_vector))
-        
+
         assert out.shape == (1, 1)
-        
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

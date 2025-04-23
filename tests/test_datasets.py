@@ -111,6 +111,32 @@ class TestMPNNDataset:
         assert input_entry.adj_matrix.shape == (29, 29)
         assert input_entry.edge_indices.shape == (num_bonds, 2)
 
+    def test_fetch_features_from_dataset_with_master_node(self, smi):
+        moldataset = datasets.MPNNDataset(
+            smiles=(smi,),
+            targets=(1.0,),
+            add_master_node=True,
+        )
+
+        input_entry = moldataset[0]
+        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
+        num_nodes = Chem.MolFromSmiles(smi).GetNumAtoms()
+
+        assert isinstance(input_entry, datasets.MPNNEntry)
+        assert isinstance(input_entry.target, torch.Tensor)
+        assert isinstance(input_entry.atom_features, torch.Tensor)
+        assert input_entry.atom_features.shape == (
+            num_nodes + 1,
+            constants.NUM_ATOM_FEATURES,
+        )
+        assert isinstance(input_entry.bond_features, torch.Tensor)
+        assert input_entry.bond_features.shape == (
+            num_bonds,
+            constants.NUM_BOND_FEATURES,
+        )
+        assert input_entry.adj_matrix.shape == (num_nodes + 1, num_nodes + 1)
+        assert input_entry.edge_indices.shape == (num_bonds + num_nodes + 1, 2)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

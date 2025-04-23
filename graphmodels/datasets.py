@@ -1,6 +1,7 @@
 import torch
 from rdkit import Chem
 from torch.utils import data as torch_data
+import torch.nn.functional as F
 import dataclasses
 from graphmodels import featurizer
 
@@ -27,11 +28,32 @@ class MPNNEntry:
 
 
 class MPNNDataset(torch_data.Dataset):
-    """Creates a molecule dataset based on MPNN v1 model."""
+    """Creates a molecule dataset based on the MPNN v1 model.
 
-    def __init__(self, smiles: tuple[str, ...], targets: tuple[float, ...]):
+    This dataset takes lists of SMILES strings and corresponding target values
+    and prepares them for use with a Message Passing Neural Network (MPNN).
+    It featurizes molecules into atom and bond features and constructs
+    adjacency matrices, optionally adding a master node. The dataset returns
+    `MPNNEntry` objects containing these features, the target, the adjacency
+    matrix, and the edge indices.
+
+    Args:
+        smiles: A tuple of SMILES strings representing the molecules.
+        targets: A tuple of float values corresponding to the target property
+            for each molecule in `smiles`.
+        add_master_node: A boolean indicating whether to add a master node
+            to the graph representation of each molecule (default is False).
+    """
+
+    def __init__(
+        self,
+        smiles: tuple[str, ...],
+        targets: tuple[float, ...],
+        add_master_node: bool = False,
+    ):
         self.smiles = smiles
         self.targets = targets
+        self.add_master_node = add_master_node
 
     def __len__(self):
         return len(self.smiles)
@@ -50,9 +72,15 @@ class MPNNDataset(torch_data.Dataset):
 
         bond_features = featurizer.featurize_bonds(mol)
 
-        adj_matrix = torch.tril(
-            torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(torch.float32)
+        adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
+            torch.float32
         )
+
+        if self.add_master_node:
+            adj_matrix = F.pad(adj_matrix, (0, 1, 0, 1), value=1)
+            atom_features = F.pad(atom_features, (0, 0, 0, 1), value=0)
+
+        adj_matrix = torch.tril(adj_matrix)
 
         return atom_features, bond_features, adj_matrix
 
@@ -73,8 +101,11 @@ class MPNNDataset(torch_data.Dataset):
         atom_features, bond_features, adj_matrix = self.transform(
             self.smiles[idx],
         )
+
         target = torch.tensor(self.targets[idx])
+
         edge_indices = torch.nonzero(adj_matrix)[:, [1, 0]]
+
         return MPNNEntry(
             atom_features=atom_features,
             bond_features=bond_features,
@@ -132,6 +163,7 @@ class NeuralFingerprintDataset(torch_data.Dataset):
             self.smiles[idx],
         )
         target = torch.tensor(self.targets[idx])
+
         return NeuralFingerprintEntry(
             atom_features=atom_features,
             bond_features=bond_features,
