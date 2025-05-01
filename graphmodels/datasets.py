@@ -72,16 +72,14 @@ class MPNNDataset(torch_data.Dataset):
 
         edge_features = featurizer.featurize_bonds(mol)
 
-        adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
-            torch.float32
-        )
+        adj_matrix, edge_index = featurizer.get_graph_connectivity(mol)
 
         if self.add_master_node:
             adj_matrix = F.pad(adj_matrix, (0, 1, 0, 1), value=1)
             adj_matrix[-1, -1] = 0  # Force no self connection in master node.
             node_features = F.pad(node_features, (0, 0, 0, 1), value=0)
 
-        return node_features, edge_features, adj_matrix
+        return node_features, edge_features, adj_matrix, edge_index
 
     def __getitem__(
         self,
@@ -97,13 +95,11 @@ class MPNNDataset(torch_data.Dataset):
 
 
         """
-        node_features, edge_features, adj_matrix = self.transform(
+        node_features, edge_features, adj_matrix, edge_indices = self.transform(
             self.smiles[idx],
         )
 
         target = torch.tensor(self.targets[idx])
-
-        edge_indices = torch.nonzero(adj_matrix).T
 
         return MPNNEntry(
             node_features=node_features,

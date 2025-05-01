@@ -137,7 +137,7 @@ class TestMPNNDataset:
         assert input_entry.adj_matrix.shape == (num_nodes + 1, num_nodes + 1)
         assert input_entry.edge_indices.shape == (
             2,
-            2 * num_bonds + 2 * num_nodes,
+            2 * num_bonds
         )
 
 

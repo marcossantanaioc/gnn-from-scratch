@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F  # noqa: N812
+from typing import NamedTuple
 from rdkit import Chem
 
 from graphmodels import constants
@@ -7,6 +8,13 @@ from graphmodels import constants
 
 class NoAtomError(Exception):
     pass
+
+
+class GraphConnectivity(NamedTuple):
+    """Stores connectivity metrics."""
+
+    adj_matrix: torch.Tensor
+    edge_index: torch.Tensor
 
 
 def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
@@ -60,6 +68,7 @@ def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
     Returns:
         A tensor of shape (N, N, F) containing the calculated bond features.
     """
+
     if molecule.GetNumBonds() == 0:
         return torch.zeros(
             (
@@ -83,6 +92,46 @@ def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
         all_bond_features[i, j] = bond_features
         all_bond_features[j, i] = bond_features
     return all_bond_features.to(torch.float32)
+
+
+def get_graph_connectivity(molecule: Chem.Mol) -> torch.Tensor:
+    """Generates adjacency matrix and edge indices for a molecular graph.
+
+    This function constructs atom-level connectivity information from an RDKit molecule.
+    It returns:
+
+    - An adjacency matrix of shape (N, N), where N is the number of atoms. Entry (i, j)
+      is 1 if a bond exists between atom i and atom j, and 0 otherwise.
+
+    - An edge index tensor of shape (2 * num_bonds, 2), listing all bonded atom pairs
+      in both directions (i -> j and j -> i), suitable for use in graph neural networks.
+
+    Args:
+        molecule: An RDKit `Chem.Mol` object representing the molecule.
+
+    Returns:
+        A `GraphConnectivity` object containing:
+            - adj_matrix: A (N, N) tensor representing the adjacency matrix.
+            - edge_index: A (2 * num_bonds, 2) tensor of directed edge indices.
+    tensor of shape (N, N, F) containing the calculated bond features.
+    """
+    
+    num_atoms = molecule.GetNumAtoms()
+    num_bonds = molecule.GetNumBonds()
+    adj_matrix = torch.zeros(num_atoms, num_atoms)
+    edge_index = []
+    for bond in molecule.GetBonds():
+        i = bond.GetBeginAtomIdx()
+        j = bond.GetEndAtomIdx()
+        adj_matrix[i, j] = 1
+        adj_matrix[j, i] = 1
+
+        edge_index.append([i, j])
+        edge_index.append([j, i])
+
+    return GraphConnectivity(
+        adj_matrix=adj_matrix, edge_index=torch.tensor(edge_index).T
+    )
 
 
 def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
@@ -130,6 +179,7 @@ def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
         A tensor of atom features of shape (N, 135), where N is the number of
         bonds in the molecule.
     """
+
     if molecule.GetNumAtoms() == 0:
         raise NoAtomError("Cannot featurize a molecule with no atoms.")
 

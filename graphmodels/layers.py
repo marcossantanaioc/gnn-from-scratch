@@ -19,26 +19,31 @@ class EdgeLayer(nn.Module):
     def __init__(
         self,
         n_edge_features: int,
-        n_hidden_features: int,
+        n_edge_hidden_features: int,
         n_node_features: int,
-        passes: int = 3,
+        n_update_steps: int = 3,
     ):
         super().__init__()
         modules = []
-        for i in range(passes):
+        for i in range(n_update_steps):
             if i == 0:
                 modules.extend(
-                    [nn.Linear(n_edge_features, n_hidden_features), nn.ReLU()]
+                    [
+                        nn.Linear(n_edge_features, n_edge_hidden_features),
+                        nn.ReLU(),
+                    ]
                 )
             else:
                 modules.extend(
                     [
-                        nn.Linear(n_hidden_features, n_hidden_features),
+                        nn.Linear(
+                            n_edge_hidden_features, n_edge_hidden_features
+                        ),
                         nn.ReLU(),
                     ]
                 )
 
-        modules.append(nn.Linear(n_hidden_features, n_node_features**2))
+        modules.append(nn.Linear(n_edge_hidden_features, n_node_features**2))
 
         self.edgelayer = nn.Sequential(*modules)
 
@@ -60,8 +65,8 @@ class EdgeLayer(nn.Module):
         return (message @ neighbors_node_features.unsqueeze(-1)).squeeze(-1)
 
 
-class UpdateLayer(nn.Module):
-    """Implements the node update mechanism inspired by the Gated Graph
+class MessagePassingLayer(nn.Module):
+    """Implements the node message passing mechanism inspired by the Gated Graph
     Sequence Neural Networks (GG-NN) paper (Li et al., 2016).
 
     This layer updates the feature vectors of each node in the graph by
@@ -103,32 +108,51 @@ class UpdateLayer(nn.Module):
     def __init__(
         self,
         n_node_features: int,
+        n_edge_features: int,
+        n_edge_hidden_features: int,
         n_hidden_features: int,
-        num_layers: int = 3,
+        n_update_steps: int = 3,
     ):
         super().__init__()
-        self.update_layers = nn.GRU(
-            n_node_features, n_hidden_features, num_layers=num_layers
+
+        self.edge_layer = EdgeLayer(
+            n_edge_features=n_edge_features,
+            n_edge_hidden_features=n_edge_hidden_features,
+            n_node_features=n_node_features,
+            n_update_steps=n_update_steps,
         )
-        self.output_layer = nn.Linear(n_hidden_features, n_node_features)
+
+        self.update_cell = nn.GRUCell(n_node_features, n_node_features)
+
+        self.n_update_steps = n_update_steps
+
+        self.output_layer = nn.Sequential(
+            nn.Linear(n_node_features, n_node_features),
+            nn.ReLU(),
+            nn.Linear(n_node_features, n_node_features),
+        )
 
     def forward(self, x):
-        messages, node_features, edge_index = x
+        node_features, edge_features, edge_index = x
 
-        source_nodes = edge_index[0]
-        neighbor_nodes = edge_index[1]
+        for _ in range(self.n_update_steps):
+            # Collect messages
+            messages = self.edge_layer(
+                (edge_features, node_features, edge_index)
+            )
+            source_nodes = edge_index[1]
+            target_nodes = edge_index[0]
 
-        # Aggregate messages
-        aggregated_messages = torch.zeros_like(node_features)
-        aggregated_messages.index_add_(
-            0, source_nodes, messages[neighbor_nodes]
-        )
+            # Aggregate messages
+            aggregated_messages = torch.zeros_like(node_features)
+            aggregated_messages.index_add_(
+                0, target_nodes, messages[source_nodes]
+            )
+            node_features = self.update_cell(
+                aggregated_messages, node_features
+            )
 
-        updated_nodes, _ = self.update_layers(
-            aggregated_messages + node_features
-        )
-
-        return self.output_layer(F.relu(updated_nodes))
+        return self.output_layer(node_features)
 
 
 class ReadoutLayer(nn.Module):
@@ -203,7 +227,9 @@ class ReadoutLayer(nn.Module):
         num_batches = int(batch_vector.max()) + 1
         emb_dim = readout.size(-1)
 
-        mol_embeddings = torch.zeros(num_batches, emb_dim).to(readout.device)
+        mol_embeddings = torch.zeros(
+            num_batches, emb_dim, device=readout.device
+        )
 
         mol_embeddings.index_add_(0, batch_vector, readout)
 

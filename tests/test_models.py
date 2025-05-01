@@ -56,7 +56,7 @@ class TestModels:
         print("Test passed: Output shape is correct!")
 
     @pytest.mark.parametrize(
-        "num_atoms, num_bonds, n_node_features, n_edge_features, n_out_features, n_bond_hidden_features, n_hidden_features, n_message_passes, n_update_layers, n_readout_steps",
+        "num_atoms, num_bonds, n_node_features, n_edge_features, n_out_features, n_edge_hidden_features, n_hidden_features, n_update_steps, n_readout_steps",
         [
             (
                 29,
@@ -68,10 +68,9 @@ class TestModels:
                 200,
                 3,
                 3,
-                3,
             ),
-            (20, 26, 50, 32, 2, 512, 512, 2, 2, 2),
-            (15, 18, 136, 16, 5, 100, 100, 1, 1, 1),
+            (20, 26, 50, 32, 2, 512, 512, 2, 2),
+            (15, 18, 136, 16, 5, 100, 100, 1, 1),
         ],  # Add multiple test cases
     )
     def test_mpnnv1_model_output_shape(
@@ -80,10 +79,9 @@ class TestModels:
         num_bonds,
         n_node_features,
         n_edge_features,
-        n_bond_hidden_features,
+        n_edge_hidden_features,
         n_hidden_features,
-        n_message_passes,
-        n_update_layers,
+        n_update_steps,
         n_readout_steps,
         n_out_features,
     ):
@@ -91,10 +89,9 @@ class TestModels:
         model = models.MPNNv1(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_bond_hidden_features=n_bond_hidden_features,
+            n_edge_hidden_features=n_edge_hidden_features,
             n_hidden_features=n_hidden_features,
-            n_message_passes=n_message_passes,
-            n_update_layers=n_update_layers,
+            n_update_steps=n_update_steps,
             n_readout_steps=n_readout_steps,
             n_out_features=n_out_features,
         )
@@ -111,8 +108,8 @@ class TestModels:
 
         # Ensure the adjacency matrix is used correctly.
         input_data = (
-            batch.edge_features,
             batch.node_features,
+            batch.edge_features,
             batch.edge_index,
             batch.batch_vector,
         )
@@ -124,12 +121,6 @@ class TestModels:
         expected_shape = torch.Size([64, n_out_features])
         assert output.shape == expected_shape
 
-
-#     min_num_nodes: int = 2,
-#     max_num_nodes: int = 50,
-#     n_node_features: int = constants.NUM_ATOM_FEATURES,
-#     n_edge_features: int = constants.NUM_BOND_FEATURES,
-#     num_examples: int = 10,
 
 if __name__ == "__main__":
     pytest.main([__file__])

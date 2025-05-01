@@ -78,7 +78,7 @@ class MPNNv1(nn.Module):
     Args:
         n_node_features (int): The dimensionality of the input node features.
         n_edge_features (int): The dimensionality of the input bond (edge) features.
-        n_bond_hidden_features (int, optional): The number of hidden features in the
+        n_edge_hidden_features (int, optional): The number of hidden features in the
             message passing layers. Defaults to 200.
         n_hidden_features (int, optional): The number of hidden features in the
             node update and readout layers. Defaults to 200.
@@ -109,24 +109,19 @@ class MPNNv1(nn.Module):
         n_edge_features: int,
         n_out_features: int,
         *,
-        n_bond_hidden_features: int = 200,
+        n_edge_hidden_features: int = 200,
         n_hidden_features: int = 200,
-        n_message_passes: int = 3,
-        n_update_layers: int = 2,
+        n_update_steps: int = 2,
         n_readout_steps: int = 2,
     ):
         super().__init__()
 
-        self.edge_layer = layers.EdgeLayer(
+        self.update_layer = layers.MessagePassingLayer(
+            n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_hidden_features=n_bond_hidden_features,
-            n_node_features=n_node_features,
-            passes=n_message_passes,
-        )
-        self.update_layer = layers.UpdateLayer(
-            n_node_features=n_node_features,
+            n_edge_hidden_features=n_edge_hidden_features,
             n_hidden_features=n_hidden_features,
-            num_layers=n_update_layers,
+            n_update_steps=n_update_steps,
         )
         self.readout_layer = layers.ReadoutLayer(
             n_node_features=n_node_features,
@@ -136,12 +131,10 @@ class MPNNv1(nn.Module):
         )
 
     def forward(self, x):
-        edge_features, node_features, edge_index, batch_vector = x
-
-        messages = self.edge_layer((edge_features, node_features, edge_index))
+        node_features, edge_features, edge_index, batch_vector = x
 
         updated_nodes = self.update_layer(
-            (messages, node_features, edge_index)
+            (node_features, edge_features, edge_index)
         )
 
         readout = self.readout_layer((updated_nodes, batch_vector))

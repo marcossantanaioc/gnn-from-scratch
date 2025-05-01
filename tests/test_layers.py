@@ -2,6 +2,7 @@ from graphmodels import datasets, layers
 import pytest
 from rdkit import Chem
 import torch
+from torch import nn
 
 
 class TestLayers:
@@ -16,26 +17,26 @@ class TestLayers:
         return Chem.MolFromSmiles(smi)
 
     @pytest.mark.parametrize(
-        "n_edge_features, n_hidden_features, n_node_features, passes,"
+        "n_edge_features, n_edge_hidden_features, n_node_features, n_update_steps,"
         " expected_num_layers",
         [
-            (24, 200, 136, 2, 3),
+            (24, 100, 136, 2, 3),
             (50, 512, 20, 3, 4),
         ],
     )
     def test_edge_layer_number_of_layers(
         self,
         n_edge_features,
-        n_hidden_features,
+        n_edge_hidden_features,
         n_node_features,
-        passes,
+        n_update_steps,
         expected_num_layers,
     ):
         edge_network = layers.EdgeLayer(
             n_edge_features=n_edge_features,
-            n_hidden_features=n_hidden_features,
+            n_edge_hidden_features=n_edge_hidden_features,
             n_node_features=n_node_features,
-            passes=passes,
+            n_update_steps=n_update_steps,
         )
         assert (
             len(
@@ -59,9 +60,9 @@ class TestLayers:
 
         edge_network = layers.EdgeLayer(
             n_edge_features=24,
-            n_hidden_features=200,
+            n_edge_hidden_features=200,
             n_node_features=136,
-            passes=2,
+            n_update_steps=2,
         )
         message = edge_network(
             (
@@ -74,33 +75,33 @@ class TestLayers:
         assert message.shape == (num_bonds * 2, 136)
 
     @pytest.mark.parametrize(
-        "n_node_features, n_hidden_features, num_layers",
+        "n_node_features, n_edge_features, n_edge_hidden_features, n_hidden_features, n_update_steps",
         [
-            (136, 512, 2),
-            (200, 100, 3),
+            (136, 24, 200, 512, 2),
+            (200, 16, 512, 200, 3),
         ],
     )
-    def test_update_layer_number_of_layers(
+    def test_update_gru_cell_weights_and_updates(
         self,
         n_node_features,
+        n_edge_features,
+        n_edge_hidden_features,
         n_hidden_features,
-        num_layers,
+        n_update_steps,
     ):
-        update_network = layers.UpdateLayer(
+        update_network = layers.MessagePassingLayer(
             n_node_features=n_node_features,
+            n_edge_features=n_edge_features,
+            n_edge_hidden_features=n_edge_hidden_features,
             n_hidden_features=n_hidden_features,
-            num_layers=num_layers,
+            n_update_steps=n_update_steps,
         )
-        assert (
-            max(
-                [
-                    l.num_layers
-                    for l in update_network.update_layers.modules()
-                    if isinstance(l, torch.nn.GRU)
-                ]
-            )
-            == num_layers
-        )
+
+        assert isinstance(update_network.update_cell, nn.GRUCell)
+        assert update_network.n_update_steps == n_update_steps
+        assert update_network.update_cell.weight_hh.size(1) == n_node_features
+        assert update_network
+        assert update_network.update_cell.weight_ih.size(1) == n_node_features
 
     def test_update_layer_output_shape(self, smi):
         moldataset = datasets.MPNNDataset(
@@ -111,16 +112,22 @@ class TestLayers:
         input_entry = moldataset[0]
         num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
 
-        update_network = layers.UpdateLayer(
+        update_network = layers.MessagePassingLayer(
             n_node_features=136,
-            n_hidden_features=512,
-            num_layers=3,
+            n_edge_features=24,
+            n_edge_hidden_features=136,
+            n_hidden_features=136,
+            n_update_steps=3,
         )
-        message = torch.rand(32, 136)
 
         out = update_network(
-            (message, input_entry.node_features, input_entry.edge_indices)
+            (
+                input_entry.node_features,
+                input_entry.edge_features,
+                input_entry.edge_indices,
+            )
         )
+
         assert out.shape == input_entry.node_features.shape
 
     @pytest.mark.parametrize(
