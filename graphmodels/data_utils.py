@@ -1,6 +1,7 @@
 import torch
 from torch.nn import functional as F  # noqa: N812
 import dataclasses
+from collections.abc import Sequence
 from graphmodels import datasets
 
 
@@ -21,7 +22,6 @@ class NeuralGraphFingerprintBatch:
 class MPNNBatch:
     """Store batch information for the MPNNv1 model."""
 
-    # adj_matrix: torch.Tensor
     edge_index: torch.Tensor
     batch_vector: torch.Tensor
     atom_features: torch.Tensor
@@ -30,6 +30,38 @@ class MPNNBatch:
 
     def to_dict(self):
         return dataclasses.asdict(self)
+
+
+def create_batch_edge_index(edge_indices: Sequence[torch.Tensor]):
+    """Creates a batch of edge indices.
+
+    This function takes all edge index matrices in the data,
+    and collates them into a single matrix of shape [2, N],
+    where N is the total number of edges in the dataset.
+    Nodes are offset by the total number of nodes from the
+    previous step. This implementation aims to mimic Torch
+    geometric batching.
+
+    Args:
+        edge_indices: a collection of edge index matrix for the batch.
+
+    Returns:
+        A concatenation of all edge indices.
+    """
+
+    offset = 0
+    to_concat = []
+    total_num_nodes = 0
+    for idx, edge_index in enumerate(edge_indices):
+        num_nodes = edge_index.max() + 1
+
+        edge_index_new = edge_index + offset
+
+        to_concat.append(edge_index_new)
+        offset += num_nodes
+        total_num_nodes += num_nodes
+
+    return torch.cat(to_concat, dim=-1)
 
 
 def mpnn_collate_diag(batch):
@@ -43,7 +75,7 @@ def mpnn_collate_diag(batch):
         ]
     )  # [total_atoms], values in [0, batch_size-1]
 
-    all_edge_indices = torch.block_diag(*[x.edge_indices for x in batch])
+    all_edge_indices = create_batch_edge_index([x.edge_indices for x in batch])
     all_atom_features = torch.concat([x.atom_features for x in batch], dim=0)
     all_bond_features = torch.concat([x.bond_features for x in batch], dim=0)
     targets = torch.stack([x.target for x in batch])

@@ -78,9 +78,8 @@ class MPNNDataset(torch_data.Dataset):
 
         if self.add_master_node:
             adj_matrix = F.pad(adj_matrix, (0, 1, 0, 1), value=1)
+            adj_matrix[-1, -1] = 0  # Force no self connection in master node.
             atom_features = F.pad(atom_features, (0, 0, 0, 1), value=0)
-
-        adj_matrix = torch.tril(adj_matrix)
 
         return atom_features, bond_features, adj_matrix
 
@@ -104,7 +103,7 @@ class MPNNDataset(torch_data.Dataset):
 
         target = torch.tensor(self.targets[idx])
 
-        edge_indices = torch.nonzero(adj_matrix)[:, [1, 0]]
+        edge_indices = torch.nonzero(adj_matrix).T
 
         return MPNNEntry(
             atom_features=atom_features,
