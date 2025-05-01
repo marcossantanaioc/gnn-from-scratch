@@ -16,7 +16,7 @@ class TestLayers:
         return Chem.MolFromSmiles(smi)
 
     @pytest.mark.parametrize(
-        "n_input_features, n_hidden_features, n_node_features, passes,"
+        "n_edge_features, n_hidden_features, n_node_features, passes,"
         " expected_num_layers",
         [
             (24, 200, 136, 2, 3),
@@ -25,14 +25,14 @@ class TestLayers:
     )
     def test_edge_layer_number_of_layers(
         self,
-        n_input_features,
+        n_edge_features,
         n_hidden_features,
         n_node_features,
         passes,
         expected_num_layers,
     ):
         edge_network = layers.EdgeLayer(
-            n_input_features=n_input_features,
+            n_edge_features=n_edge_features,
             n_hidden_features=n_hidden_features,
             n_node_features=n_node_features,
             passes=passes,
@@ -58,7 +58,7 @@ class TestLayers:
         num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
 
         edge_network = layers.EdgeLayer(
-            n_input_features=24,
+            n_edge_features=24,
             n_hidden_features=200,
             n_node_features=136,
             passes=2,
@@ -71,26 +71,24 @@ class TestLayers:
             )
         )
 
-        assert message.shape == (num_bonds, 136)
+        assert message.shape == (num_bonds * 2, 136)
 
     @pytest.mark.parametrize(
-        "n_input_features, n_hidden_features, n_node_features, num_layers",
+        "n_node_features, n_hidden_features, num_layers",
         [
-            (24, 200, 136, 2),
-            (50, 512, 20, 3),
+            (136, 512, 2),
+            (200, 100, 3),
         ],
     )
     def test_update_layer_number_of_layers(
         self,
-        n_input_features,
-        n_hidden_features,
         n_node_features,
+        n_hidden_features,
         num_layers,
     ):
         update_network = layers.UpdateLayer(
-            n_input_features=n_input_features,
-            n_hidden_features=n_hidden_features,
             n_node_features=n_node_features,
+            n_hidden_features=n_hidden_features,
             num_layers=num_layers,
         )
         assert (
@@ -114,9 +112,8 @@ class TestLayers:
         num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
 
         update_network = layers.UpdateLayer(
-            n_input_features=136,
-            n_hidden_features=512,
             n_node_features=136,
+            n_hidden_features=512,
             num_layers=3,
         )
         message = torch.rand(32, 136)
@@ -127,7 +124,7 @@ class TestLayers:
         assert out.shape == input_entry.atom_features.shape
 
     @pytest.mark.parametrize(
-        "n_input_features, n_hidden_features, n_out_features, num_layers",
+        "n_node_features, n_hidden_features, n_out_features, num_layers",
         [
             (24, 200, 136, 2),
             (50, 512, 20, 3),
@@ -135,13 +132,13 @@ class TestLayers:
     )
     def test_readout_layer_number_of_layers(
         self,
-        n_input_features,
+        n_node_features,
         n_hidden_features,
         n_out_features,
         num_layers,
     ):
         readout_network = layers.ReadoutLayer(
-            n_input_features=n_input_features,
+            n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
             n_out_features=n_out_features,
             num_layers=num_layers,
@@ -166,7 +163,7 @@ class TestLayers:
         input_entry = moldataset[0]
 
         readout_network = layers.ReadoutLayer(
-            n_input_features=136,
+            n_node_features=136,
             n_hidden_features=512,
             n_out_features=1,
             num_layers=3,

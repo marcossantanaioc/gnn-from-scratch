@@ -1,7 +1,8 @@
 import pytest
 import torch
 
-from graphmodels import models
+from graphmodels import models, data_utils
+import data_helpers
 
 
 class TestModels:
@@ -55,7 +56,7 @@ class TestModels:
         print("Test passed: Output shape is correct!")
 
     @pytest.mark.parametrize(
-        "num_atoms, num_bonds, n_node_features, n_bond_features, n_out_features, n_bond_hidden_features, n_hidden_features, n_message_passes, n_update_layers, n_readout_steps",
+        "num_atoms, num_bonds, n_node_features, n_edge_features, n_out_features, n_bond_hidden_features, n_hidden_features, n_message_passes, n_update_layers, n_readout_steps",
         [
             (
                 29,
@@ -78,7 +79,7 @@ class TestModels:
         num_atoms,
         num_bonds,
         n_node_features,
-        n_bond_features,
+        n_edge_features,
         n_bond_hidden_features,
         n_hidden_features,
         n_message_passes,
@@ -89,7 +90,7 @@ class TestModels:
         # Create an instance of the NeuralGraphFingerprintModel
         model = models.MPNNv1(
             n_node_features=n_node_features,
-            n_bond_features=n_bond_features,
+            n_edge_features=n_edge_features,
             n_bond_hidden_features=n_bond_hidden_features,
             n_hidden_features=n_hidden_features,
             n_message_passes=n_message_passes,
@@ -98,31 +99,37 @@ class TestModels:
             n_out_features=n_out_features,
         )
 
-        # Define dummy input data: atom features and adjacency matrix
-        node_features = torch.randn(num_atoms, n_node_features)
-
-        edge_features = torch.randn(num_bonds, n_bond_features)
-
-        batch_vector = torch.zeros(num_atoms).to(torch.int32)
-
-        adj_matrix = torch.zeros(num_atoms, num_atoms)
-
-        for i in range(num_atoms):
-            adj_matrix[i, (i + 1) % num_atoms] = 1
-            adj_matrix[i, (i - 1 + num_atoms) % num_atoms] = 1
-
-        edge_index = torch.nonzero(adj_matrix)
+        batch = data_utils.mpnn_collate_diag(
+            data_helpers._generate_random_dataset(
+                min_num_nodes=num_atoms,
+                max_num_nodes=num_atoms,
+                n_node_features=n_node_features,
+                n_edge_features=n_edge_features,
+                num_examples=64,
+            ).dsets
+        )
 
         # Ensure the adjacency matrix is used correctly.
-        input_data = (edge_features, node_features, edge_index, batch_vector)
+        input_data = (
+            batch.edge_features,
+            batch.node_features,
+            batch.edge_index,
+            batch.batch_vector,
+        )
 
         # Pass the input data through the model
         output = model(input_data)
 
         # Assert that the output shape is as expected: (batch_size, n_output_units)
-        expected_shape = torch.Size([1, n_out_features])
+        expected_shape = torch.Size([64, n_out_features])
         assert output.shape == expected_shape
 
+
+#     min_num_nodes: int = 2,
+#     max_num_nodes: int = 50,
+#     n_node_features: int = constants.NUM_ATOM_FEATURES,
+#     n_edge_features: int = constants.NUM_BOND_FEATURES,
+#     num_examples: int = 10,
 
 if __name__ == "__main__":
     pytest.main([__file__])

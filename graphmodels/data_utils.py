@@ -11,7 +11,7 @@ class NeuralGraphFingerprintBatch:
 
     adj_matrix: torch.Tensor
     edge_index: torch.Tensor
-    atom_features: torch.Tensor
+    node_features: torch.Tensor
     targets: torch.Tensor
 
     def to_dict(self):
@@ -24,8 +24,8 @@ class MPNNBatch:
 
     edge_index: torch.Tensor
     batch_vector: torch.Tensor
-    atom_features: torch.Tensor
-    bond_features: torch.Tensor
+    node_features: torch.Tensor
+    edge_features: torch.Tensor
     targets: torch.Tensor
 
     def to_dict(self):
@@ -67,7 +67,7 @@ def create_batch_edge_index(edge_indices: Sequence[torch.Tensor]):
 def mpnn_collate_diag(batch):
     """Generates a batch of inputs for MPNN."""
     # Build batch vector
-    num_atoms_per_mol = [nf.atom_features.size(0) for nf in batch]
+    num_atoms_per_mol = [nf.node_features.size(0) for nf in batch]
     batch_vector = torch.cat(
         [
             torch.full((n,), i, dtype=torch.long)
@@ -76,15 +76,15 @@ def mpnn_collate_diag(batch):
     )  # [total_atoms], values in [0, batch_size-1]
 
     all_edge_indices = create_batch_edge_index([x.edge_indices for x in batch])
-    all_atom_features = torch.concat([x.atom_features for x in batch], dim=0)
-    all_bond_features = torch.concat([x.bond_features for x in batch], dim=0)
+    all_node_features = torch.concat([x.node_features for x in batch], dim=0)
+    all_edge_features = torch.concat([x.edge_features for x in batch], dim=0)
     targets = torch.stack([x.target for x in batch])
 
     return MPNNBatch(
         batch_vector=batch_vector,
         edge_index=all_edge_indices,
-        atom_features=all_atom_features,
-        bond_features=all_bond_features,
+        node_features=all_node_features,
+        edge_features=all_edge_features,
         targets=targets,
     )
 
@@ -92,7 +92,7 @@ def mpnn_collate_diag(batch):
 def neuralgraph_collate_diag(batch):
     """Generates a batch of inputs for NeuralGraphFingerprint."""
     # Build batch vector
-    num_atoms_per_mol = [nf.atom_features.size(0) for nf in batch]
+    num_atoms_per_mol = [nf.node_features.size(0) for nf in batch]
     batch_vector = torch.cat(
         [
             torch.full((n,), i, dtype=torch.long)
@@ -101,13 +101,13 @@ def neuralgraph_collate_diag(batch):
     )  # [total_atoms], values in [0, batch_size-1]
 
     all_adj_matrix = torch.block_diag(*[x.adj_matrix for x in batch])
-    all_atom_features = torch.concat([x.atom_features for x in batch], dim=0)
+    all_node_features = torch.concat([x.node_features for x in batch], dim=0)
     targets = torch.stack([x.target for x in batch])
 
     return NeuralGraphFingerprintBatch(
         adj_matrix=all_adj_matrix,
         edge_index=batch_vector,
-        atom_features=all_atom_features,
+        node_features=all_node_features,
         targets=targets,
     )
 
@@ -132,21 +132,21 @@ def neuralgraph_longest_collate(
     Returns:
         concatenated features and targets for all elements in a batch.
     """
-    all_atom_features = []
-    all_bond_features = []
+    all_node_features = []
+    all_edge_features = []
     all_adj_matrices = []
     all_targets = []
 
     # Get max number of atoms in data
     for entry in batch:
-        num_to_pad = max_num_atoms - entry.atom_features.shape[0]
-        atom_feats_padded = F.pad(
-            entry.atom_features,
+        num_to_pad = max_num_atoms - entry.node_features.shape[0]
+        node_feats_padded = F.pad(
+            entry.node_features,
             pad=(0, 0, 0, num_to_pad),
             value=0,
         )
         bond_feats_padded = F.pad(
-            entry.bond_features,
+            entry.edge_features,
             pad=(0, 0, 0, num_to_pad, 0, num_to_pad),
             value=0,
         )
@@ -157,15 +157,15 @@ def neuralgraph_longest_collate(
         )
         all_targets.append(entry.target)
 
-        all_bond_features.append(bond_feats_padded)
+        all_edge_features.append(bond_feats_padded)
         all_adj_matrices.append(adj_matrix_padded)
-        all_atom_features.append(atom_feats_padded)
+        all_node_features.append(node_feats_padded)
     return tuple(
         map(
             torch.stack,
             [
-                all_atom_features,
-                all_bond_features,
+                all_node_features,
+                all_edge_features,
                 all_adj_matrices,
                 all_targets,
             ],

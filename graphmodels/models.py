@@ -77,7 +77,7 @@ class MPNNv1(nn.Module):
 
     Args:
         n_node_features (int): The dimensionality of the input node features.
-        n_bond_features (int): The dimensionality of the input bond (edge) features.
+        n_edge_features (int): The dimensionality of the input bond (edge) features.
         n_bond_hidden_features (int, optional): The number of hidden features in the
             message passing layers. Defaults to 200.
         n_hidden_features (int, optional): The number of hidden features in the
@@ -92,7 +92,7 @@ class MPNNv1(nn.Module):
 
     Inputs:
         x (tuple): A tuple containing the following tensors:
-            - edge_features (torch.Tensor): Tensor of edge features, shape [num_edges, n_bond_features].
+            - edge_features (torch.Tensor): Tensor of edge features, shape [num_edges, n_edge_features].
             - node_features (torch.Tensor): Tensor of node features, shape [num_nodes, n_node_features].
             - edge_index (torch.Tensor): Graph connectivity in COO format, shape [2, num_edges].
             - batch_vector (torch.Tensor): Batch assignment vector for nodes, shape [num_nodes].
@@ -106,7 +106,7 @@ class MPNNv1(nn.Module):
     def __init__(
         self,
         n_node_features: int,
-        n_bond_features: int,
+        n_edge_features: int,
         n_out_features: int,
         *,
         n_bond_hidden_features: int = 200,
@@ -118,19 +118,18 @@ class MPNNv1(nn.Module):
         super().__init__()
 
         self.edge_layer = layers.EdgeLayer(
-            n_input_features=n_bond_features,
+            n_edge_features=n_edge_features,
             n_hidden_features=n_bond_hidden_features,
             n_node_features=n_node_features,
             passes=n_message_passes,
         )
         self.update_layer = layers.UpdateLayer(
-            n_input_features=n_node_features,
-            n_hidden_features=n_hidden_features,
             n_node_features=n_node_features,
+            n_hidden_features=n_hidden_features,
             num_layers=n_update_layers,
         )
         self.readout_layer = layers.ReadoutLayer(
-            n_input_features=n_node_features,
+            n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
             n_out_features=n_out_features,
             num_layers=n_readout_steps,

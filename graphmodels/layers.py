@@ -18,7 +18,7 @@ class EdgeLayer(nn.Module):
 
     def __init__(
         self,
-        n_input_features: int,
+        n_edge_features: int,
         n_hidden_features: int,
         n_node_features: int,
         passes: int = 3,
@@ -28,7 +28,7 @@ class EdgeLayer(nn.Module):
         for i in range(passes):
             if i == 0:
                 modules.extend(
-                    [nn.Linear(n_input_features, n_hidden_features), nn.ReLU()]
+                    [nn.Linear(n_edge_features, n_hidden_features), nn.ReLU()]
                 )
             else:
                 modules.extend(
@@ -44,18 +44,20 @@ class EdgeLayer(nn.Module):
 
     def forward(self, x):
         edge_features, node_features, edge_index = x
-        neighbors_index = edge_index[:, 1]
+        neighbors_index = edge_index[1]
 
-        edge_neighbors_features = edge_features[neighbors_index]
-        node_features = node_features[neighbors_index]
+        neighbors_edge_features = edge_features[neighbors_index]
+        neighbors_node_features = node_features[neighbors_index]
 
-        edge_out = self.edgelayer(edge_neighbors_features)
+        edge_out = self.edgelayer(neighbors_edge_features)
 
         message = edge_out.view(
-            -1, node_features.size(-1), node_features.size(-1)
+            -1,
+            neighbors_node_features.size(-1),
+            neighbors_node_features.size(-1),
         )
 
-        return (message @ node_features.unsqueeze(-1)).squeeze(-1)
+        return (message @ neighbors_node_features.unsqueeze(-1)).squeeze(-1)
 
 
 class UpdateLayer(nn.Module):
@@ -100,27 +102,28 @@ class UpdateLayer(nn.Module):
 
     def __init__(
         self,
-        n_input_features: int,
-        n_hidden_features: int,
         n_node_features: int,
+        n_hidden_features: int,
         num_layers: int = 3,
     ):
         super().__init__()
         self.update_layers = nn.GRU(
-            n_input_features, n_hidden_features, num_layers=num_layers
+            n_node_features, n_hidden_features, num_layers=num_layers
         )
         self.output_layer = nn.Linear(n_hidden_features, n_node_features)
 
     def forward(self, x):
         messages, node_features, edge_index = x
-        source_nodes = edge_index[:, 0]
 
+        source_nodes = edge_index[0]
+        neighbor_nodes = edge_index[1]
+
+        # Aggregate messages
         aggregated_messages = torch.zeros_like(node_features)
-        aggregated_messages.scatter_add_(
-            0,
-            source_nodes.unsqueeze(-1).expand(-1, messages.size(-1)),
-            messages,
+        aggregated_messages.index_add_(
+            0, source_nodes, messages[neighbor_nodes]
         )
+
         updated_nodes, _ = self.update_layers(
             aggregated_messages + node_features
         )
@@ -169,7 +172,7 @@ class ReadoutLayer(nn.Module):
 
     def __init__(
         self,
-        n_input_features: int,
+        n_node_features: int,
         n_hidden_features: int,
         n_out_features: int,
         num_layers: int = 2,
@@ -179,7 +182,7 @@ class ReadoutLayer(nn.Module):
         for i in range(num_layers):
             if i == 0:
                 layers.extend(
-                    [nn.Linear(n_input_features, n_hidden_features), nn.ReLU()]
+                    [nn.Linear(n_node_features, n_hidden_features), nn.ReLU()]
                 )
             else:
                 layers.extend(
