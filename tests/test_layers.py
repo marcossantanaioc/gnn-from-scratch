@@ -65,8 +65,8 @@ class TestLayers:
         )
         message = edge_network(
             (
-                input_entry.bond_features,
-                input_entry.atom_features,
+                input_entry.edge_features,
+                input_entry.node_features,
                 input_entry.edge_indices,
             )
         )
@@ -119,9 +119,9 @@ class TestLayers:
         message = torch.rand(32, 136)
 
         out = update_network(
-            (message, input_entry.atom_features, input_entry.edge_indices)
+            (message, input_entry.node_features, input_entry.edge_indices)
         )
-        assert out.shape == input_entry.atom_features.shape
+        assert out.shape == input_entry.node_features.shape
 
     @pytest.mark.parametrize(
         "n_node_features, n_hidden_features, n_out_features, num_layers",
@@ -168,11 +168,11 @@ class TestLayers:
             n_out_features=1,
             num_layers=3,
         )
-        batch_vector = torch.zeros(input_entry.atom_features.size(0)).to(
+        batch_vector = torch.zeros(input_entry.node_features.size(0)).to(
             torch.int32
         )
 
-        out = readout_network((input_entry.atom_features, batch_vector))
+        out = readout_network((input_entry.node_features, batch_vector))
 
         assert out.shape == (1, 1)
 

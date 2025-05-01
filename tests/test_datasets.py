@@ -43,16 +43,16 @@ class TestNeuralFingerprintDataset:
         input_entry = moldataset[0]
         assert isinstance(input_entry, datasets.NeuralFingerprintEntry)
         assert isinstance(input_entry.target, torch.Tensor)
-        assert isinstance(input_entry.atom_features, torch.Tensor)
-        assert input_entry.atom_features.shape == (
+        assert isinstance(input_entry.node_features, torch.Tensor)
+        assert input_entry.node_features.shape == (
             29,
-            constants.NUM_ATOM_FEATURES,
+            constants.NUM_NODE_FEATURES,
         )
-        assert isinstance(input_entry.bond_features, torch.Tensor)
-        assert input_entry.bond_features.shape == (
+        assert isinstance(input_entry.edge_features, torch.Tensor)
+        assert input_entry.edge_features.shape == (
             29,
             29,
-            constants.NUM_BOND_FEATURES,
+            constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (29, 29)
 
@@ -98,15 +98,15 @@ class TestMPNNDataset:
 
         assert isinstance(input_entry, datasets.MPNNEntry)
         assert isinstance(input_entry.target, torch.Tensor)
-        assert isinstance(input_entry.atom_features, torch.Tensor)
-        assert input_entry.atom_features.shape == (
+        assert isinstance(input_entry.node_features, torch.Tensor)
+        assert input_entry.node_features.shape == (
             29,
-            constants.NUM_ATOM_FEATURES,
+            constants.NUM_NODE_FEATURES,
         )
-        assert isinstance(input_entry.bond_features, torch.Tensor)
-        assert input_entry.bond_features.shape == (
+        assert isinstance(input_entry.edge_features, torch.Tensor)
+        assert input_entry.edge_features.shape == (
             num_bonds,
-            constants.NUM_BOND_FEATURES,
+            constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (29, 29)
         assert input_entry.edge_indices.shape == (2, num_bonds * 2)
@@ -124,15 +124,15 @@ class TestMPNNDataset:
 
         assert isinstance(input_entry, datasets.MPNNEntry)
         assert isinstance(input_entry.target, torch.Tensor)
-        assert isinstance(input_entry.atom_features, torch.Tensor)
-        assert input_entry.atom_features.shape == (
+        assert isinstance(input_entry.node_features, torch.Tensor)
+        assert input_entry.node_features.shape == (
             num_nodes + 1,
-            constants.NUM_ATOM_FEATURES,
+            constants.NUM_NODE_FEATURES,
         )
-        assert isinstance(input_entry.bond_features, torch.Tensor)
-        assert input_entry.bond_features.shape == (
+        assert isinstance(input_entry.edge_features, torch.Tensor)
+        assert input_entry.edge_features.shape == (
             num_bonds,
-            constants.NUM_BOND_FEATURES,
+            constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (num_nodes + 1, num_nodes + 1)
         assert input_entry.edge_indices.shape == (

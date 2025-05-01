@@ -64,8 +64,8 @@ def _create_random_graph(
 def _generate_random_dataset(
     min_num_nodes: int = 2,
     max_num_nodes: int = 50,
-    n_node_features: int = constants.NUM_ATOM_FEATURES,
-    n_edge_features: int = constants.NUM_BOND_FEATURES,
+    n_node_features: int = constants.NUM_NODE_FEATURES,
+    n_edge_features: int = constants.NUM_EDGE_FEATURES,
     num_examples: int = 10,
 ) -> Sequence[SampleEntry]:
     dsets = []

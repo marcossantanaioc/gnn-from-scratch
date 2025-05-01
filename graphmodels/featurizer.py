@@ -31,8 +31,8 @@ def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
     """
     is_conjugated = torch.tensor(int(bond.GetIsConjugated())).unsqueeze(-1)
     bond_type = F.one_hot(
-        torch.tensor(constants.BOND_TYPES[bond.GetBondType()]),
-        num_classes=constants.MAX_BOND_TYPES,
+        torch.tensor(constants.EDGE_TYPES[bond.GetBondType()]),
+        num_classes=constants.MAX_EDGE_TYPES,
     )
 
     is_in_ring = torch.tensor(int(bond.IsInRing())).unsqueeze(-1)
@@ -65,14 +65,14 @@ def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
             (
                 molecule.GetNumAtoms(),
                 molecule.GetNumAtoms(),
-                constants.NUM_BOND_FEATURES,
+                constants.NUM_EDGE_FEATURES,
             ),
         )
     all_bond_features = torch.zeros(
         (
             molecule.GetNumAtoms(),
             molecule.GetNumAtoms(),
-            constants.NUM_BOND_FEATURES,
+            constants.NUM_EDGE_FEATURES,
         ),
     )
     for bond in molecule.GetBonds():
@@ -102,7 +102,7 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
     existing bond in a (B, F) tensor.
     """
     if molecule.GetNumBonds() == 0:
-        return torch.zeros(1, constants.NUM_BOND_FEATURES).to(torch.float32)
+        return torch.zeros(1, constants.NUM_EDGE_FEATURES).to(torch.float32)
 
     bond_features = []
     for bond in molecule.GetBonds():

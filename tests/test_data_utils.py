@@ -37,11 +37,11 @@ class TestMPNNBatching:
         assert collated_dataset.node_features.size(0) == batch.total_nodes
         assert (
             collated_dataset.node_features.size(1)
-            == constants.NUM_ATOM_FEATURES
+            == constants.NUM_NODE_FEATURES
         )
         assert (
             collated_dataset.edge_features.size(1)
-            == constants.NUM_BOND_FEATURES
+            == constants.NUM_EDGE_FEATURES
         )
 
         # Check batch vector is correct

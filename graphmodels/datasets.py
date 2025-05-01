@@ -10,8 +10,8 @@ from graphmodels import featurizer
 class NeuralFingerprintEntry:
     """Class to store input data for neuralgraph fingerprint."""
 
-    atom_features: torch.Tensor
-    bond_features: torch.Tensor
+    node_features: torch.Tensor
+    edge_features: torch.Tensor
     adj_matrix: torch.Tensor
     target: torch.Tensor
 
@@ -20,8 +20,8 @@ class NeuralFingerprintEntry:
 class MPNNEntry:
     """Class to store input data for MPNN v1."""
 
-    atom_features: torch.Tensor
-    bond_features: torch.Tensor
+    node_features: torch.Tensor
+    edge_features: torch.Tensor
     adj_matrix: torch.Tensor
     edge_indices: torch.Tensor
     target: torch.Tensor
@@ -68,9 +68,9 @@ class MPNNDataset(torch_data.Dataset):
         """
         mol = Chem.MolFromSmiles(smiles)
 
-        atom_features = featurizer.featurize_atoms(mol)
+        node_features = featurizer.featurize_atoms(mol)
 
-        bond_features = featurizer.featurize_bonds(mol)
+        edge_features = featurizer.featurize_bonds(mol)
 
         adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
             torch.float32
@@ -79,9 +79,9 @@ class MPNNDataset(torch_data.Dataset):
         if self.add_master_node:
             adj_matrix = F.pad(adj_matrix, (0, 1, 0, 1), value=1)
             adj_matrix[-1, -1] = 0  # Force no self connection in master node.
-            atom_features = F.pad(atom_features, (0, 0, 0, 1), value=0)
+            node_features = F.pad(node_features, (0, 0, 0, 1), value=0)
 
-        return atom_features, bond_features, adj_matrix
+        return node_features, edge_features, adj_matrix
 
     def __getitem__(
         self,
@@ -97,7 +97,7 @@ class MPNNDataset(torch_data.Dataset):
 
 
         """
-        atom_features, bond_features, adj_matrix = self.transform(
+        node_features, edge_features, adj_matrix = self.transform(
             self.smiles[idx],
         )
 
@@ -106,8 +106,8 @@ class MPNNDataset(torch_data.Dataset):
         edge_indices = torch.nonzero(adj_matrix).T
 
         return MPNNEntry(
-            atom_features=atom_features,
-            bond_features=bond_features,
+            node_features=node_features,
+            edge_features=edge_features,
             target=target,
             adj_matrix=adj_matrix,
             edge_indices=edge_indices,
@@ -134,15 +134,15 @@ class NeuralFingerprintDataset(torch_data.Dataset):
         """
         mol = Chem.MolFromSmiles(smiles)
 
-        atom_features = featurizer.featurize_atoms(mol).to(torch.float32)
-        bond_features = featurizer.featurize_bonds_per_atom(mol).to(
+        node_features = featurizer.featurize_atoms(mol).to(torch.float32)
+        edge_features = featurizer.featurize_bonds_per_atom(mol).to(
             torch.float32
         )
         adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
             torch.float32,
         )
 
-        return atom_features, bond_features, adj_matrix
+        return node_features, edge_features, adj_matrix
 
     def __getitem__(
         self,
@@ -158,14 +158,14 @@ class NeuralFingerprintDataset(torch_data.Dataset):
 
 
         """
-        atom_features, bond_features, adj_matrix = self.transform(
+        node_features, edge_features, adj_matrix = self.transform(
             self.smiles[idx],
         )
         target = torch.tensor(self.targets[idx])
 
         return NeuralFingerprintEntry(
-            atom_features=atom_features,
-            bond_features=bond_features,
+            node_features=node_features,
+            edge_features=edge_features,
             target=target,
             adj_matrix=adj_matrix,
         )
