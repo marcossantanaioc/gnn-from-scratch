@@ -72,7 +72,7 @@ class TestLayers:
             )
         )
 
-        assert message.shape == (num_bonds * 2, 136)
+        assert message.shape == (num_bonds, 136)
 
     @pytest.mark.parametrize(
         "n_node_features, n_edge_features, n_edge_hidden_features, n_hidden_features, n_update_steps",

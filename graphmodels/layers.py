@@ -51,10 +51,12 @@ class EdgeLayer(nn.Module):
         edge_features, node_features, edge_index = x
         neighbors_index = edge_index[1]
 
-        neighbors_edge_features = edge_features[neighbors_index]
+        #neighbors_edge_features = edge_features[neighbors_index]
         neighbors_node_features = node_features[neighbors_index]
+        
+        # edge_features = edge_features.repeat_interleave(2, dim=0)
 
-        edge_out = self.edgelayer(neighbors_edge_features)
+        edge_out = self.edgelayer(edge_features)
 
         message = edge_out.view(
             -1,
@@ -140,13 +142,13 @@ class MessagePassingLayer(nn.Module):
             messages = self.edge_layer(
                 (edge_features, node_features, edge_index)
             )
-            source_nodes = edge_index[1]
+            
             target_nodes = edge_index[0]
 
             # Aggregate messages
             aggregated_messages = torch.zeros_like(node_features)
             aggregated_messages.index_add_(
-                0, target_nodes, messages[source_nodes]
+                0, target_nodes, messages
             )
             node_features = self.update_cell(
                 aggregated_messages, node_features

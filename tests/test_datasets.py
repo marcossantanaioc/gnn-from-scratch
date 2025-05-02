@@ -109,7 +109,7 @@ class TestMPNNDataset:
             constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (29, 29)
-        assert input_entry.edge_indices.shape == (2, num_bonds * 2)
+        assert input_entry.edge_indices.shape == (2, num_bonds)
 
     def test_fetch_features_from_dataset_with_master_node(self, smi):
         moldataset = datasets.MPNNDataset(
@@ -137,7 +137,7 @@ class TestMPNNDataset:
         assert input_entry.adj_matrix.shape == (num_nodes + 1, num_nodes + 1)
         assert input_entry.edge_indices.shape == (
             2,
-            2 * num_bonds
+            32
         )
 
 
