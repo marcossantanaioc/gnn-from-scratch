@@ -22,6 +22,7 @@ class EdgeLayer(nn.Module):
         n_edge_hidden_features: int,
         n_node_features: int,
         n_update_steps: int = 3,
+        dropout: float = 0.25
     ):
         super().__init__()
         modules = []
@@ -30,6 +31,7 @@ class EdgeLayer(nn.Module):
                 modules.extend(
                     [
                         nn.Linear(n_edge_features, n_edge_hidden_features),
+                        nn.Dropout(dropout),
                         nn.ReLU(),
                     ]
                 )
@@ -39,6 +41,7 @@ class EdgeLayer(nn.Module):
                         nn.Linear(
                             n_edge_hidden_features, n_edge_hidden_features
                         ),
+                        nn.Dropout(dropout),
                         nn.ReLU(),
                     ]
                 )
@@ -114,6 +117,7 @@ class MessagePassingLayer(nn.Module):
         n_edge_hidden_features: int,
         n_hidden_features: int,
         n_update_steps: int = 3,
+        dropout: float = 0.25
     ):
         super().__init__()
 
@@ -122,6 +126,7 @@ class MessagePassingLayer(nn.Module):
             n_edge_hidden_features=n_edge_hidden_features,
             n_node_features=n_node_features,
             n_update_steps=n_update_steps,
+            dropout=dropout,
         )
 
         self.update_cell = nn.GRUCell(n_node_features, n_node_features)
@@ -130,6 +135,7 @@ class MessagePassingLayer(nn.Module):
 
         self.output_layer = nn.Sequential(
             nn.Linear(n_node_features, n_node_features),
+            nn.Dropout(dropout),
             nn.ReLU(),
             nn.Linear(n_node_features, n_node_features),
         )
@@ -202,6 +208,7 @@ class ReadoutLayer(nn.Module):
         n_hidden_features: int,
         n_out_features: int,
         num_layers: int = 2,
+        dropout: float = 0.25
     ):
         super().__init__()
         layers = []
@@ -214,6 +221,7 @@ class ReadoutLayer(nn.Module):
                 layers.extend(
                     [
                         nn.Linear(n_hidden_features, n_hidden_features),
+                        nn.Dropout(dropout),
                         nn.ReLU(),
                     ]
                 )
