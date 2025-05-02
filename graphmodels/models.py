@@ -113,7 +113,7 @@ class MPNNv1(nn.Module):
         n_hidden_features: int = 200,
         n_update_steps: int = 2,
         n_readout_steps: int = 2,
-        dropout: float = 0.25
+        dropout: float = 0.25,
     ):
         super().__init__()
 

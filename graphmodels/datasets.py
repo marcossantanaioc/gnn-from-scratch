@@ -95,8 +95,10 @@ class MPNNDataset(torch_data.Dataset):
 
 
         """
-        node_features, edge_features, adj_matrix, edge_indices = self.transform(
-            self.smiles[idx],
+        node_features, edge_features, adj_matrix, edge_indices = (
+            self.transform(
+                self.smiles[idx],
+            )
         )
 
         target = torch.tensor(self.targets[idx])

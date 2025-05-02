@@ -115,7 +115,7 @@ def get_graph_connectivity(molecule: Chem.Mol) -> torch.Tensor:
             - edge_index: A (2, num_bonds*2) tensor of directed edge indices.
     tensor of shape (N, N, F) containing the calculated bond features.
     """
-    
+
     num_atoms = molecule.GetNumAtoms()
     adj_matrix = torch.zeros(num_atoms, num_atoms)
     for bond in molecule.GetBonds():
@@ -125,7 +125,8 @@ def get_graph_connectivity(molecule: Chem.Mol) -> torch.Tensor:
         adj_matrix[j, i] = 1
 
     return GraphConnectivity(
-        adj_matrix=adj_matrix.long(), edge_index=torch.nonzero(torch.triu(adj_matrix)).T.contiguous().long()
+        adj_matrix=adj_matrix.long(),
+        edge_index=torch.nonzero(torch.triu(adj_matrix)).T.contiguous().long(),
     )
 
 

@@ -135,10 +135,7 @@ class TestMPNNDataset:
             constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (num_nodes + 1, num_nodes + 1)
-        assert input_entry.edge_indices.shape == (
-            2,
-            32
-        )
+        assert input_entry.edge_indices.shape == (2, 32)
 
 
 if __name__ == "__main__":
