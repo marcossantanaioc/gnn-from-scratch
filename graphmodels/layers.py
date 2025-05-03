@@ -3,6 +3,48 @@ from torch import nn
 import torch.nn.functional as F
 
 
+class MultiTowerEdge(nn.Module):
+    def __init__(
+        self,
+        n_edge_features: int,
+        n_node_features: int,
+        n_towers: int = 8,
+        dropout: float = 0.25,
+    ):
+        super().__init__()
+
+        self.n_towers = n_towers
+        self.tower_dimension = n_node_features // n_towers
+        self.n_node_features = n_node_features
+        self.n_edge_features = n_edge_features
+
+        self.edgetower = nn.Sequential(
+            nn.Linear(
+                n_edge_features, self.n_node_features * self.tower_dimension
+            ),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x):
+        edge_features, node_features, edge_index = x
+        neighbors_index = edge_index[1]
+
+        neighbors_node_features = node_features[neighbors_index]
+
+        edge_out = self.edgetower(edge_features).view(
+            edge_features.size(0), self.n_towers, self.tower_dimension, -1
+        )
+
+        neighbors_node_features_reshaped = neighbors_node_features.view(
+            -1, self.n_towers, self.tower_dimension
+        ).unsqueeze(-1)
+
+        return (edge_out @ neighbors_node_features_reshaped).view(
+            -1, self.n_node_features
+        )
+
+
 class EdgeLayer(nn.Module):
     """Implements the Edge network as described in Gilmer et al.'s MPNN framework.
 
@@ -113,16 +155,24 @@ class MessagePassingLayer(nn.Module):
         n_edge_features: int,
         n_edge_hidden_features: int,
         n_hidden_features: int,
+        n_towers: int = 8,
         n_update_steps: int = 3,
         dropout: float = 0.25,
     ):
         super().__init__()
 
-        self.edge_layer = EdgeLayer(
+        # self.edge_layer = EdgeLayer(
+        #     n_edge_features=n_edge_features,
+        #     n_edge_hidden_features=n_edge_hidden_features,
+        #     n_node_features=n_node_features,
+        #     n_update_steps=n_update_steps,
+        #     dropout=dropout,
+        # )
+
+        self.edge_layer = MultiTowerEdge(
             n_edge_features=n_edge_features,
-            n_edge_hidden_features=n_edge_hidden_features,
             n_node_features=n_node_features,
-            n_update_steps=n_update_steps,
+            n_towers=n_towers,
             dropout=dropout,
         )
 

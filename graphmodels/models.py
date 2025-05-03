@@ -111,8 +111,9 @@ class MPNNv1(nn.Module):
         *,
         n_edge_hidden_features: int = 200,
         n_hidden_features: int = 200,
-        n_update_steps: int = 2,
+        n_towers: int = 8,
         n_readout_steps: int = 2,
+        n_update_steps: int = 3,
         dropout: float = 0.25,
     ):
         super().__init__()
@@ -123,6 +124,7 @@ class MPNNv1(nn.Module):
             n_edge_hidden_features=n_edge_hidden_features,
             n_hidden_features=n_hidden_features,
             n_update_steps=n_update_steps,
+            n_towers=n_towers,
             dropout=dropout,
         )
         self.readout_layer = layers.ReadoutLayer(

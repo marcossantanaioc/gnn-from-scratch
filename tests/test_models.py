@@ -56,21 +56,22 @@ class TestModels:
         print("Test passed: Output shape is correct!")
 
     @pytest.mark.parametrize(
-        "num_atoms, num_bonds, n_node_features, n_edge_features, n_out_features, n_edge_hidden_features, n_hidden_features, n_update_steps, n_readout_steps",
+        "num_atoms, num_bonds, n_node_features, n_edge_features, n_out_features, n_edge_hidden_features, n_towers, n_hidden_features, n_update_steps, n_readout_steps",
         [
             (
                 29,
                 32,
-                100,
+                512,
                 24,
                 1,
                 200,
+                8,
                 200,
                 3,
                 3,
             ),
-            (20, 26, 50, 32, 2, 512, 512, 2, 2),
-            (15, 18, 136, 16, 5, 100, 100, 1, 1),
+            (20, 26, 64, 32, 2, 512, 8, 512, 2, 2),
+            (15, 18, 136, 16, 5, 100, 8, 100, 1, 1),
         ],  # Add multiple test cases
     )
     def test_mpnnv1_model_output_shape(
@@ -81,6 +82,7 @@ class TestModels:
         n_edge_features,
         n_edge_hidden_features,
         n_hidden_features,
+        n_towers,
         n_update_steps,
         n_readout_steps,
         n_out_features,
@@ -94,6 +96,7 @@ class TestModels:
             n_update_steps=n_update_steps,
             n_readout_steps=n_readout_steps,
             n_out_features=n_out_features,
+            n_towers=n_towers,
         )
 
         batch = data_utils.mpnn_collate_diag(
