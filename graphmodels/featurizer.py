@@ -94,7 +94,9 @@ def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
     return all_bond_features.to(torch.float32)
 
 
-def get_graph_connectivity(molecule: Chem.Mol) -> torch.Tensor:
+def get_graph_connectivity(
+    molecule: Chem.Mol,
+) -> torch.Tensor:
     """Generates adjacency matrix and edge indices for a molecular graph.
 
     This function constructs atom-level connectivity information from an RDKit molecule.

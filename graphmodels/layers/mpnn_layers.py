@@ -153,21 +153,12 @@ class MessagePassingLayer(nn.Module):
         self,
         n_node_features: int,
         n_edge_features: int,
-        n_edge_hidden_features: int,
         n_hidden_features: int,
         n_towers: int = 8,
         n_update_steps: int = 3,
         dropout: float = 0.25,
     ):
         super().__init__()
-
-        # self.edge_layer = EdgeLayer(
-        #     n_edge_features=n_edge_features,
-        #     n_edge_hidden_features=n_edge_hidden_features,
-        #     n_node_features=n_node_features,
-        #     n_update_steps=n_update_steps,
-        #     dropout=dropout,
-        # )
 
         self.edge_layer = MultiTowerEdge(
             n_edge_features=n_edge_features,

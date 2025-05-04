@@ -1,4 +1,5 @@
-from graphmodels import datasets, layers
+from graphmodels.datasets import mpnn_dataset
+from graphmodels.layers import mpnn_layers
 import pytest
 from rdkit import Chem
 import torch
@@ -32,7 +33,7 @@ class TestLayers:
         n_update_steps,
         expected_num_layers,
     ):
-        edge_network = layers.EdgeLayer(
+        edge_network = mpnn_layers.EdgeLayer(
             n_edge_features=n_edge_features,
             n_edge_hidden_features=n_edge_hidden_features,
             n_node_features=n_node_features,
@@ -50,7 +51,7 @@ class TestLayers:
         )  # Includes input layer
 
     def test_edge_layer_output_shape(self, smi):
-        moldataset = datasets.MPNNDataset(
+        moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
@@ -58,7 +59,7 @@ class TestLayers:
         input_entry = moldataset[0]
         num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
 
-        edge_network = layers.EdgeLayer(
+        edge_network = mpnn_layers.EdgeLayer(
             n_edge_features=24,
             n_edge_hidden_features=200,
             n_node_features=136,
@@ -75,24 +76,22 @@ class TestLayers:
         assert message.shape == (num_bonds, 136)
 
     @pytest.mark.parametrize(
-        "n_node_features, n_edge_features, n_edge_hidden_features, n_hidden_features, n_update_steps",
+        "n_node_features, n_edge_features, n_hidden_features, n_update_steps",
         [
-            (136, 24, 200, 512, 2),
-            (200, 16, 512, 200, 3),
+            (136, 24, 512, 2),
+            (200, 16, 200, 3),
         ],
     )
     def test_update_gru_cell_weights_and_updates(
         self,
         n_node_features,
         n_edge_features,
-        n_edge_hidden_features,
         n_hidden_features,
         n_update_steps,
     ):
-        update_network = layers.MessagePassingLayer(
+        update_network = mpnn_layers.MessagePassingLayer(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_edge_hidden_features=n_edge_hidden_features,
             n_hidden_features=n_hidden_features,
             n_update_steps=n_update_steps,
         )
@@ -104,7 +103,7 @@ class TestLayers:
         assert update_network.update_cell.weight_ih.size(1) == n_node_features
 
     def test_update_layer_output_shape(self, smi):
-        moldataset = datasets.MPNNDataset(
+        moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
@@ -112,10 +111,9 @@ class TestLayers:
         input_entry = moldataset[0]
         num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
 
-        update_network = layers.MessagePassingLayer(
+        update_network = mpnn_layers.MessagePassingLayer(
             n_node_features=136,
             n_edge_features=24,
-            n_edge_hidden_features=136,
             n_hidden_features=136,
             n_update_steps=3,
         )
@@ -144,7 +142,7 @@ class TestLayers:
         n_out_features,
         num_layers,
     ):
-        readout_network = layers.ReadoutLayer(
+        readout_network = mpnn_layers.ReadoutLayer(
             n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
             n_out_features=n_out_features,
@@ -162,14 +160,14 @@ class TestLayers:
         )
 
     def test_readout_layer_output_shape(self, smi):
-        moldataset = datasets.MPNNDataset(
+        moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
 
         input_entry = moldataset[0]
 
-        readout_network = layers.ReadoutLayer(
+        readout_network = mpnn_layers.ReadoutLayer(
             n_node_features=136,
             n_hidden_features=512,
             n_out_features=1,

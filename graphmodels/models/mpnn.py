@@ -1,70 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F  # noqa: N812
-from graphmodels import layers
-
-
-class NeuralGraphFingerprintModel(nn.Module):
-    """Neural Graph Fingerprint model.
-    This model is inspired by the neural fingerprint approach introduced by
-    Duvenaud et al. (2015). We implemented the pseudocode version, not the
-    github code. This means the model only uses atom features as inputs.
-    """
-
-    def __init__(
-        self,
-        n_input_features: int,
-        n_hidden_units: int,
-        n_output_units: int,
-        radius: int,
-    ):
-        super().__init__()
-
-        self.h = nn.ModuleList(
-            [
-                nn.Linear(
-                    n_input_features if r == 0 else n_hidden_units,
-                    n_hidden_units,
-                )
-                for r in range(radius)
-            ]
-        )
-        self.o = nn.ModuleList(
-            [nn.Linear(n_hidden_units, n_hidden_units) for r in range(radius)]
-        )
-        self.output_layer = nn.Linear(n_hidden_units, n_output_units)
-        self.radius = radius
-
-    def forward(self, x):
-        atom_feats, adj_matrix = x
-        f = []
-
-        # Iterate over radius. Every pass we collect messages from more distant neighbors up to self.radius
-        for r in range(self.radius):
-            # Fetch neighbors messages. Non-neighbors are zeroed while neighbors are summed
-            neighbors_features = adj_matrix @ atom_feats
-
-            # Pass messages to every atom
-            v = atom_feats + neighbors_features
-
-            # Update atom's features with a hidden layer and non-linearity
-            ra = F.tanh(self.h[r](v))
-
-            # Make a sparse representation of the fingerprint, where the softmax creates a prob distribution over features
-            i = F.softmax(self.o[r](ra), dim=-1)
-
-            # Update atom features to the new features
-            atom_feats = ra
-
-            # Add the fingerprint to the list. We sum over all atoms to get a representation of features for that molecule [n_hidden_units]
-            f.append(i.sum(dim=1))
-
-        # Sum over layers to get the final fingerprint for a molecule
-
-        # print(torch.stack(f).shape)
-        fp = torch.stack(f).sum(dim=0)
-
-        return self.output_layer(fp)
+from graphmodels.layers import mpnn_layers
 
 
 class MPNNv1(nn.Module):
@@ -79,9 +16,9 @@ class MPNNv1(nn.Module):
         n_node_features (int): The dimensionality of the input node features.
         n_edge_features (int): The dimensionality of the input bond (edge) features.
         n_edge_hidden_features (int, optional): The number of hidden features in the
-            message passing layers. Defaults to 200.
+            message passing mpnn_layers. Defaults to 200.
         n_hidden_features (int, optional): The number of hidden features in the
-            node update and readout layers. Defaults to 200.
+            node update and readout mpnn_layers. Defaults to 200.
         n_message_passes (int, optional): The number of message passing iterations
             (layers) in the edge layer. Defaults to 3.
         n_update_layers (int, optional): The number of layers in the node update
@@ -109,7 +46,6 @@ class MPNNv1(nn.Module):
         n_edge_features: int,
         n_out_features: int,
         *,
-        n_edge_hidden_features: int = 200,
         n_hidden_features: int = 200,
         n_towers: int = 8,
         n_readout_steps: int = 2,
@@ -118,16 +54,15 @@ class MPNNv1(nn.Module):
     ):
         super().__init__()
 
-        self.update_layer = layers.MessagePassingLayer(
+        self.update_layer = mpnn_layers.MessagePassingLayer(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_edge_hidden_features=n_edge_hidden_features,
             n_hidden_features=n_hidden_features,
             n_update_steps=n_update_steps,
             n_towers=n_towers,
             dropout=dropout,
         )
-        self.readout_layer = layers.ReadoutLayer(
+        self.readout_layer = mpnn_layers.ReadoutLayer(
             n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
             n_out_features=n_out_features,

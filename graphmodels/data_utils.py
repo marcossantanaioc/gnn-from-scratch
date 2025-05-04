@@ -2,7 +2,7 @@ import torch
 from torch.nn import functional as F  # noqa: N812
 import dataclasses
 from collections.abc import Sequence
-from graphmodels import datasets
+from graphmodels.datasets import ngf_dataset, mpnn_dataset
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -64,7 +64,7 @@ def create_batch_edge_index(edge_indices: Sequence[torch.Tensor]):
     return torch.cat(to_concat, dim=-1)
 
 
-def mpnn_collate_diag(batch):
+def mpnn_collate_diag(batch: list[mpnn_dataset.MPNNEntry]):
     """Generates a batch of inputs for MPNN."""
     # Build batch vector
     num_atoms_per_mol = [nf.node_features.size(0) for nf in batch]
@@ -89,7 +89,7 @@ def mpnn_collate_diag(batch):
     )
 
 
-def neuralgraph_collate_diag(batch):
+def neuralgraph_collate_diag(batch: list[ngf_dataset.NeuralFingerprintEntry]):
     """Generates a batch of inputs for NeuralGraphFingerprint."""
     # Build batch vector
     num_atoms_per_mol = [nf.node_features.size(0) for nf in batch]
@@ -113,7 +113,7 @@ def neuralgraph_collate_diag(batch):
 
 
 def neuralgraph_longest_collate(
-    batch: list[datasets.NeuralFingerprintEntry],
+    batch: list[ngf_dataset.NeuralFingerprintEntry],
     max_num_atoms: int,
 ):
     """
