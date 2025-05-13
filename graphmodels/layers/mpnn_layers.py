@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 
 class MultiTowerEdge(nn.Module):
@@ -22,7 +21,8 @@ class MultiTowerEdge(nn.Module):
 
         self.edgetower = nn.Sequential(
             nn.Linear(
-                n_edge_features, self.n_node_features * self.tower_dimension
+                n_edge_features,
+                self.n_node_features * self.tower_dimension,
             ),
             nn.ReLU(),
             nn.Dropout(dropout),
@@ -35,25 +35,32 @@ class MultiTowerEdge(nn.Module):
         neighbors_node_features = node_features[neighbors_index]
 
         edge_out = self.edgetower(edge_features).view(
-            edge_features.size(0), self.n_towers, self.tower_dimension, -1
+            edge_features.size(0),
+            self.n_towers,
+            self.tower_dimension,
+            -1,
         )
 
         neighbors_node_features_reshaped = neighbors_node_features.view(
-            -1, self.n_towers, self.tower_dimension
+            -1,
+            self.n_towers,
+            self.tower_dimension,
         ).unsqueeze(-1)
 
         return (edge_out @ neighbors_node_features_reshaped).view(
-            -1, self.n_node_features
+            -1,
+            self.n_node_features,
         )
 
 
 class EdgeLayer(nn.Module):
-    """Implements the Edge network as described in Gilmer et al.'s MPNN framework.
+    """Implements the Edge network as described in Gilmer et al.'s MPNN.
 
     The Edge Network module transforms the features of neighboring nodes by
-    incorporating information from the edges connecting them. For a given node v,
-    it gathers the features of its connecting edges (e_vw) and its neighbor nodes
-    (h_w). The edge features e_vw are used to generate a transformation matrix,
+    incorporating information from the edges connecting them.
+    For a given node v, it gathers the features of its connecting edges (e_vw)
+    and its neighbor nodes (h_w).
+    The edge features e_vw are used to generate a transformation matrix,
     which is then applied to the neighbor node features h_w. This process
     effectively
     conditions the transformation of node features on the properties of the
@@ -77,17 +84,18 @@ class EdgeLayer(nn.Module):
                         nn.Linear(n_edge_features, n_edge_hidden_features),
                         nn.Dropout(dropout),
                         nn.ReLU(),
-                    ]
+                    ],
                 )
             else:
                 modules.extend(
                     [
                         nn.Linear(
-                            n_edge_hidden_features, n_edge_hidden_features
+                            n_edge_hidden_features,
+                            n_edge_hidden_features,
                         ),
                         nn.Dropout(dropout),
                         nn.ReLU(),
-                    ]
+                    ],
                 )
 
         modules.append(nn.Linear(n_edge_hidden_features, n_node_features**2))
@@ -112,8 +120,7 @@ class EdgeLayer(nn.Module):
 
 
 class MessagePassingLayer(nn.Module):
-    """Implements the node message passing mechanism inspired by the Gated Graph
-    Sequence Neural Networks (GG-NN) paper (Li et al., 2016).
+    """Implements a Gated Graph Neural Networks (GG-NN).
 
     This layer updates the feature vectors of each node in the graph by
     aggregating incoming messages from its neighbors and using a Gated
@@ -186,7 +193,7 @@ class MessagePassingLayer(nn.Module):
         for _ in range(self.n_update_steps):
             # Collect messages
             messages = self.edge_layer(
-                (edge_features, node_features, edge_index)
+                (edge_features, node_features, edge_index),
             )
 
             target_nodes = edge_index[0]
@@ -195,7 +202,8 @@ class MessagePassingLayer(nn.Module):
             aggregated_messages = torch.zeros_like(node_features)
             aggregated_messages.index_add_(0, target_nodes, messages)
             node_features = self.update_cell(
-                aggregated_messages, node_features
+                aggregated_messages,
+                node_features,
             )
 
         return self.output_layer(node_features)
@@ -253,7 +261,7 @@ class ReadoutLayer(nn.Module):
         for i in range(num_layers):
             if i == 0:
                 layers.extend(
-                    [nn.Linear(n_node_features, n_hidden_features), nn.ReLU()]
+                    [nn.Linear(n_node_features, n_hidden_features), nn.ReLU()],
                 )
             else:
                 layers.extend(
@@ -261,7 +269,7 @@ class ReadoutLayer(nn.Module):
                         nn.Linear(n_hidden_features, n_hidden_features),
                         nn.Dropout(dropout),
                         nn.ReLU(),
-                    ]
+                    ],
                 )
 
         self.readout = nn.Sequential(*layers)
@@ -276,7 +284,9 @@ class ReadoutLayer(nn.Module):
         emb_dim = readout.size(-1)
 
         mol_embeddings = torch.zeros(
-            num_batches, emb_dim, device=readout.device
+            num_batches,
+            emb_dim,
+            device=readout.device,
         )
 
         mol_embeddings.index_add_(0, batch_vector, readout)
