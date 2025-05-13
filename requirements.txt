@@ -16,3 +16,5 @@ rdkit==2024.9.6
 # Utilities & Visualization
 tqdm==4.67.1
 matplotlib==3.10.1
+etils
+importlib_resources

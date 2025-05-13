@@ -2,7 +2,8 @@ import pytest
 import torch
 from rdkit import Chem
 
-from graphmodels import constants, datasets
+from graphmodels import constants
+from graphmodels.datasets import ngf_dataset
 
 
 class TestNeuralFingerprintDataset:
@@ -19,14 +20,14 @@ class TestNeuralFingerprintDataset:
         return Chem.MolFromSmiles(smi)
 
     def test_dataset_len(self, smi):
-        moldataset = datasets.NeuralFingerprintDataset(
+        moldataset = ngf_dataset.NeuralFingerprintDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
         assert len(moldataset) == 1
 
     def test_fetch_one_from_dataset(self, smi):
-        moldataset = datasets.NeuralFingerprintDataset(
+        moldataset = ngf_dataset.NeuralFingerprintDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
@@ -36,23 +37,23 @@ class TestNeuralFingerprintDataset:
             pytest.fail("The dataset has zero entries.")
 
     def test_fetch_features_from_dataset(self, smi):
-        moldataset = datasets.NeuralFingerprintDataset(
+        moldataset = ngf_dataset.NeuralFingerprintDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
         input_entry = moldataset[0]
-        assert isinstance(input_entry, datasets.NeuralFingerprintEntry)
+        assert isinstance(input_entry, ngf_dataset.NeuralFingerprintEntry)
         assert isinstance(input_entry.target, torch.Tensor)
-        assert isinstance(input_entry.atom_features, torch.Tensor)
-        assert input_entry.atom_features.shape == (
+        assert isinstance(input_entry.node_features, torch.Tensor)
+        assert input_entry.node_features.shape == (
             29,
-            constants.NUM_ATOM_FEATURES,
+            constants.NUM_NODE_FEATURES,
         )
-        assert isinstance(input_entry.bond_features, torch.Tensor)
-        assert input_entry.bond_features.shape == (
+        assert isinstance(input_entry.edge_features, torch.Tensor)
+        assert input_entry.edge_features.shape == (
             29,
             29,
-            constants.NUM_BOND_FEATURES,
+            constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (29, 29)
 

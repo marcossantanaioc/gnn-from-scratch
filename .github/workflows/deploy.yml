@@ -16,6 +16,13 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-2019, ubuntu-22.04-arm]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        torch-version: [2.6.0]
+        cuda-version: ['cpu', 'cu118', 'cu121', 'cu124', 'cu126']
 
     steps:
     - uses: actions/checkout@v4
@@ -23,6 +30,16 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
+    - name: Install CUDA ${{ matrix.cuda-version }}
+      if: ${{ matrix.cuda-version != 'cpu' }}
+      run: |
+        bash .github/workflows/cuda/${{ matrix.cuda-version }}-${{ runner.os }}.sh
+
+    - name: Install PyTorch ${{ matrix.torch-version }}+${{ matrix.cuda-version }}
+      run: |
+        pip install torch==${{ matrix.torch-version }} --extra-index-url https://download.pytorch.org/whl/${{ matrix.cuda-version }}
+        python -c "import torch; print('PyTorch:', torch.__version__)"
+        python -c "import torch; print('CUDA:', torch.version.cuda)"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

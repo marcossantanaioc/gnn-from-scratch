@@ -1,6 +1,7 @@
 import torch
 from rdkit import Chem
 from torch.utils import data as torch_data
+import torch.nn.functional as F
 import dataclasses
 from graphmodels import featurizer
 
@@ -9,8 +10,8 @@ from graphmodels import featurizer
 class NeuralFingerprintEntry:
     """Class to store input data for neuralgraph fingerprint."""
 
-    atom_features: torch.Tensor
-    bond_features: torch.Tensor
+    node_features: torch.Tensor
+    edge_features: torch.Tensor
     adj_matrix: torch.Tensor
     target: torch.Tensor
 
@@ -35,13 +36,15 @@ class NeuralFingerprintDataset(torch_data.Dataset):
         """
         mol = Chem.MolFromSmiles(smiles)
 
-        atom_features = featurizer.featurize_atoms(mol).to(torch.float32)
-        bond_features = featurizer.featurize_bonds(mol).to(torch.float32)
+        node_features = featurizer.featurize_atoms(mol).to(torch.float32)
+        edge_features = featurizer.featurize_bonds_per_atom(mol).to(
+            torch.float32
+        )
         adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
             torch.float32,
         )
 
-        return atom_features, bond_features, adj_matrix
+        return node_features, edge_features, adj_matrix
 
     def __getitem__(
         self,
@@ -57,13 +60,14 @@ class NeuralFingerprintDataset(torch_data.Dataset):
 
 
         """
-        atom_features, bond_features, adj_matrix = self.transform(
+        node_features, edge_features, adj_matrix = self.transform(
             self.smiles[idx],
         )
         target = torch.tensor(self.targets[idx])
+
         return NeuralFingerprintEntry(
-            atom_features=atom_features,
-            bond_features=bond_features,
+            node_features=node_features,
+            edge_features=edge_features,
             target=target,
             adj_matrix=adj_matrix,
         )

@@ -3,3 +3,5 @@
 .ipynb_checkpoints/
 .pytest_cache/
 *.egg-info
+notebooks/gnns.ipynb
+notebooks/neuralgraphfingerprint.ipynb
