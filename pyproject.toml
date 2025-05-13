@@ -21,7 +21,7 @@ dependencies = [
     "rdkit==2024.9.6",
     "tqdm==4.67.1",
     "matplotlib==3.10.1",
-    "torch-scatter @ https://data.pyg.org/whl/torch-2.6.0+cu124/torch_scatter-2.1.2%2Bcu124-cp38-cp38-linux_x86_64.whl"
+    "torch-scatter==2.1.2
 ]
 
 [project.optional-dependencies]
