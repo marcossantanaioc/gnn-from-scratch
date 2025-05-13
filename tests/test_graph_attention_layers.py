@@ -1,8 +1,9 @@
+import pytest
+import torch
+from rdkit import Chem
+
 from graphmodels.datasets import mpnn_dataset
 from graphmodels.layers import graph_attention_layers
-import pytest
-from rdkit import Chem
-import torch
 
 
 class TestLayers:
@@ -35,7 +36,7 @@ class TestLayers:
                     layer
                     for layer in gat_layer.modules()
                     if isinstance(layer, torch.nn.Linear)
-                ]
+                ],
             )
             == expected_num_layers
         )  # Includes input layer
@@ -76,7 +77,8 @@ class TestLayers:
             n_hidden_features=200,
         )
         att_out = gat_layer.compute_attention(
-            input_entry.node_features, input_entry.edge_indices
+            input_entry.node_features,
+            input_entry.edge_indices,
         )
 
         assert len(att_out) == 3

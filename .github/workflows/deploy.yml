@@ -30,6 +30,7 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
+<<<<<<< HEAD
     - name: Install CUDA ${{ matrix.cuda-version }}
       if: ${{ matrix.cuda-version != 'cpu' }}
       run: |
@@ -40,6 +41,12 @@ jobs:
         pip install torch==${{ matrix.torch-version }} --extra-index-url https://download.pytorch.org/whl/${{ matrix.cuda-version }}
         python -c "import torch; print('PyTorch:', torch.__version__)"
         python -c "import torch; print('CUDA:', torch.version.cuda)"
+=======
+    - name: Install pytorch & torch_scatter
+      run: |
+        pip install torch==2.6.0
+        pip install torch-scatter
+>>>>>>> 30aba814c3554326892a5e15c27f663ec196356c
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

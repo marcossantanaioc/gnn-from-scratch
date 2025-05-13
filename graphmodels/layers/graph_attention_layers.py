@@ -1,7 +1,7 @@
 import torch
-from torch import nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812
 import torch_scatter
+from torch import nn
 
 
 class SimpleGAT(nn.Module):
@@ -68,17 +68,23 @@ class SimpleGAT(nn.Module):
         eij = self.attn(h_concat)
 
         attention_score = torch_scatter.scatter_softmax(
-            src=eij, index=target_nodes, dim=0
+            src=eij,
+            index=target_nodes,
+            dim=0,
         )
 
         return (attention_score * h_j), h, target_nodes
 
     def forward(self, node_features, edge_index):
         message, node_features, target_nodes = self.compute_attention(
-            node_features=node_features, edge_index=edge_index
+            node_features=node_features,
+            edge_index=edge_index,
         )
 
         out = torch_scatter.scatter_add(
-            message, target_nodes, dim=0, dim_size=node_features.size(0)
+            message,
+            target_nodes,
+            dim=0,
+            dim_size=node_features.size(0),
         )
         return F.leaky_relu(out, self.scaling)

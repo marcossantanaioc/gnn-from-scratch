@@ -5,7 +5,6 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "graphmodels"
 version = "0.1.0"
-description = "Featurization method developed by Duvenaud et al 2017."
 authors = [
     {name = "Marcos Santana", email = "marcosvssantana@gmail.com"}
 ]
@@ -21,7 +20,7 @@ dependencies = [
     "scipy",
     "rdkit==2024.9.6",
     "tqdm==4.67.1",
-    "matplotlib==3.10.1"
+    "matplotlib==3.10.1",
 ]
 
 [project.optional-dependencies]
