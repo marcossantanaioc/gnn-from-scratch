@@ -1,5 +1,5 @@
 # GNN From Scratch 🧠🧪  
-Implementing Graph Neural Networks for Molecular Machine Learning
+Implementing Graph Neural Networks from scratch.
 
 This repository contains **from-scratch implementations** of foundational Graph Neural Networks (GNNs) described in the literature, with a focus on molecular property prediction. Each model is implemented in PyTorch, using minimal dependencies and emphasizing clarity and reproducibility.
 
