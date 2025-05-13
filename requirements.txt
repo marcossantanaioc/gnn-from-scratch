@@ -1,5 +1,6 @@
 # NN
 torch==2.6.0
+torch-scatter -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 
 # Testing & Linting
 pytest==8.3.5
