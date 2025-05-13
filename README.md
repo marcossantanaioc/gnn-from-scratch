@@ -16,8 +16,3 @@ This repository contains **from-scratch implementations** of foundational Graph 
 | Graph Attention Layer (GAT) | [Veličković et al., 2017](https://arxiv.org/abs/1710.10903) | ✅ |
 
 > ✅ = Implemented
-
----
-
-## 📁 Repository Structure
-<pre> gnn-from-scratch/ │ ├── models/ # Core GNN model implementations │ ├── ngf_model.py # Neural Fingerprints (NFP) │ ├── mpnn.py # Message Passing Neural Network (MPNN) │ ├── layers/ # GNN building blocks │ ├── graph_attention_layers.py │ ├── mpnn_layers.py │ ├── datasets/ # Dataset loaders and utilities │ ├── mpnn_dataset.py │ ├── ngf_dataset.py │ ├── experiments/ # Training scripts │ ├── train_nfp.py │ ├── train_mpnn.py │ ├── train_gat.py │ ├── tests/ # Unit tests │ ├── test_models.py │ ├── test_featurizer.py │ ├── test_graph_attention_layers.py │ ├── pyproject.toml # Project metadata and dependencies ├── README.md # Project overview </pre>
