@@ -35,12 +35,13 @@ class TestLayers:
             n_node_features=n_node_features,
             n_towers=n_towers,
         )
-        
+
         tower_dim = n_node_features // n_towers
-        assert edge_network.edgetower[0].weight.shape == (tower_dim*n_node_features, n_edge_features)
-        
-        
-        
+        assert edge_network.edgetower[0].weight.shape == (
+            tower_dim * n_node_features,
+            n_edge_features,
+        )
+
     def test_multitower_edge_layer_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
@@ -65,7 +66,6 @@ class TestLayers:
 
         assert message.shape == (num_bonds, 136)
 
-        
     @pytest.mark.parametrize(
         "n_edge_features, n_edge_hidden_features, n_node_features, n_update_steps,"
         " expected_num_layers",

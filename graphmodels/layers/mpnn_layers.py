@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 class MultiTowerEdge(nn.Module):
     """Implements multitower edge network as described by Gilmer et al."""
+
     def __init__(
         self,
         n_edge_features: int,
