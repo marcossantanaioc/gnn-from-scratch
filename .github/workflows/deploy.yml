@@ -40,6 +40,9 @@ jobs:
         pip install torch==${{ matrix.torch-version }} --extra-index-url https://download.pytorch.org/whl/${{ matrix.cuda-version }}
         python -c "import torch; print('PyTorch:', torch.__version__)"
         python -c "import torch; print('CUDA:', torch.version.cuda)"
+    - name: Install torch_scatter
+      run: |
+        pip install torch-scatter
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
