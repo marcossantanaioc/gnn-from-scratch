@@ -66,6 +66,7 @@ class TestLayers:
             smiles=(smi,),
             targets=(1.0,),
         )
+        
 
         input_entry = moldataset[0]
         mol = Chem.MolFromSmiles(smi)
