@@ -16,6 +16,7 @@ class SimpleGAT(nn.Module):
     def __init__(
         self,
         n_node_features: int,
+        n_edge_features: int,
         n_hidden_features: int,
         scaling: float = 0.2,
         dropout: float = 0.25,
@@ -24,11 +25,13 @@ class SimpleGAT(nn.Module):
         self.scaling = scaling
         self.dropout = dropout
         self.w = nn.Linear(n_node_features, n_hidden_features)
-        self.attn = nn.Linear(n_hidden_features * 2, 1)
+        self.edgew = nn.Linear(n_edge_features, n_hidden_features)
+        self.attn = nn.Linear(n_hidden_features * 3, 1)
 
     def compute_attention(
         self,
         node_features: torch.Tensor,
+        edge_features: torch.Tensor,
         edge_index: torch.Tensor,
     ) -> torch.Tensor:
         """Computes attention score between nodes i and j.
@@ -52,6 +55,7 @@ class SimpleGAT(nn.Module):
 
         Args:
             node_features: input node features (shape = N, F)
+            edge_features: input edge features between (shape = E, D)
             where N is the number of nodes and F the number of features.
             edge_index: graph connectivity in COO format with shape (2, E),
                 where E is the number of edges. The first row contains target
@@ -61,13 +65,14 @@ class SimpleGAT(nn.Module):
         """
 
         h = F.leaky_relu(self.w(node_features), self.scaling)
+        edge_h = F.leaky_relu(self.edgew(edge_features), self.scaling)
 
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
 
         h_i = h[target_nodes]
         h_j = h[neighbors_nodes]
-        h_concat = torch.cat([h_i, h_j], dim=-1)
+        h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
 
         eij = F.dropout(self.attn(h_concat), self.dropout)
 
@@ -79,9 +84,15 @@ class SimpleGAT(nn.Module):
 
         return (attention_score * h_j), h, target_nodes
 
-    def forward(self, node_features, edge_index):
+    def forward(
+        self,
+        node_features: torch.Tensor,
+        edge_features: torch.Tensor,
+        edge_index: torch.Tensor,
+    ):
         message, node_features, target_nodes = self.compute_attention(
             node_features=node_features,
+            edge_features=edge_features,
             edge_index=edge_index,
         )
 
