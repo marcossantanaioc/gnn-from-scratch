@@ -1,8 +1,10 @@
-import torch
-from torch.nn import functional as F  # noqa: N812
 import dataclasses
 from collections.abc import Sequence
-from graphmodels.datasets import ngf_dataset, mpnn_dataset
+
+import torch
+from torch.nn import functional as F  # noqa: N812
+
+from graphmodels.datasets import mpnn_dataset, ngf_dataset
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -72,7 +74,7 @@ def mpnn_collate_diag(batch: list[mpnn_dataset.MPNNEntry]):
         [
             torch.full((n,), i, dtype=torch.long)
             for i, n in enumerate(num_atoms_per_mol)
-        ]
+        ],
     )  # [total_atoms], values in [0, batch_size-1]
 
     all_edge_indices = create_batch_edge_index([x.edge_indices for x in batch])
@@ -97,7 +99,7 @@ def neuralgraph_collate_diag(batch: list[ngf_dataset.NeuralFingerprintEntry]):
         [
             torch.full((n,), i, dtype=torch.long)
             for i, n in enumerate(num_atoms_per_mol)
-        ]
+        ],
     )  # [total_atoms], values in [0, batch_size-1]
 
     all_adj_matrix = torch.block_diag(*[x.adj_matrix for x in batch])

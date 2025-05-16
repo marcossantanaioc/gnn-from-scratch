@@ -18,9 +18,11 @@ class SimpleGAT(nn.Module):
         n_node_features: int,
         n_hidden_features: int,
         scaling: float = 0.2,
+        dropout: float = 0.25,
     ):
         super().__init__()
         self.scaling = scaling
+        self.dropout = dropout
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 2, 1)
 
@@ -56,7 +58,9 @@ class SimpleGAT(nn.Module):
             Attention scores for nodes.
         """
 
-        h = F.leaky_relu(self.w(node_features), self.scaling)
+        h = F.leaky_relu(
+            F.dropout(self.w(node_features), self.dropout), self.scaling
+        )
 
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
