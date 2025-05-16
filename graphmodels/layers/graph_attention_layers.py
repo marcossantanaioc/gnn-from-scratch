@@ -58,9 +58,7 @@ class SimpleGAT(nn.Module):
             Attention scores for nodes.
         """
 
-        h = F.leaky_relu(
-            F.dropout(self.w(node_features), self.dropout), self.scaling
-        )
+        h = F.leaky_relu(self.w(node_features), self.scaling)
 
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
@@ -69,7 +67,7 @@ class SimpleGAT(nn.Module):
         h_j = h[neighbors_nodes]
         h_concat = torch.cat([h_i, h_j], dim=-1)
 
-        eij = self.attn(h_concat)
+        eij = F.dropout(self.attn(h_concat), self.dropout)
 
         attention_score = torch_scatter.scatter_softmax(
             src=eij,
