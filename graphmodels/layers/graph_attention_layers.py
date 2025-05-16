@@ -53,7 +53,9 @@ class SimpleGAT(nn.Module):
         Args:
             node_features: input node features (shape = N, F)
             where N is the number of nodes and F the number of features.
-            edge_index: a matrix where every row corresponds to an edge.
+            edge_index: graph connectivity in COO format with shape (2, E),
+                where E is the number of edges. The first row contains target
+                node indices, and the second row contains source node indices.
         Returns:
             Attention scores for nodes.
         """
