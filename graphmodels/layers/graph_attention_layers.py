@@ -74,12 +74,15 @@ class SimpleGAT(nn.Module):
         h_j = h[neighbors_nodes]
         h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
 
-        eij = F.dropout(self.attn(h_concat), self.dropout)
+        eij = self.attn(h_concat)
 
-        attention_score = torch_scatter.scatter_softmax(
-            src=eij,
-            index=target_nodes,
-            dim=0,
+        attention_score = F.dropout(
+            torch_scatter.scatter_softmax(
+                src=eij,
+                index=target_nodes,
+                dim=0,
+            ),
+            p=self.dropout,
         )
 
         return (attention_score * h_j), h, target_nodes
