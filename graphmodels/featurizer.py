@@ -1,6 +1,7 @@
+from typing import NamedTuple
+
 import torch
 import torch.nn.functional as F  # noqa: N812
-from typing import NamedTuple
 from rdkit import Chem
 
 from graphmodels import constants
@@ -102,11 +103,9 @@ def get_graph_connectivity(
     This function constructs atom-level connectivity information from an RDKit molecule.
     It returns:
 
-    - An adjacency matrix of shape (N, N), where N is the number of atoms. Entry (i, j)
-      is 1 if a bond exists between atom i and atom j, and 0 otherwise.
+    - An adjacency matrix of shape (N, N), where N is the number of atoms.
 
-    - An edge index tensor of shape (2 * num_bonds, 2), listing all bonded atom pairs
-      in both directions (i -> j and j -> i), suitable for use in graph neural networks.
+    - An edge index tensor of shape (2 * num_bonds, 2).
 
     Args:
         molecule: An RDKit `Chem.Mol` object representing the molecule.
@@ -128,7 +127,7 @@ def get_graph_connectivity(
 
     return GraphConnectivity(
         adj_matrix=adj_matrix.long(),
-        edge_index=torch.nonzero(torch.triu(adj_matrix)).T.contiguous().long(),
+        edge_index=torch.nonzero(adj_matrix).T.contiguous().long(),
     )
 
 
@@ -154,7 +153,7 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
     bond_features = []
     for bond in molecule.GetBonds():
         feats = _featurize_one_bond(bond)
-        bond_features.append(feats)
+        bond_features.extend([feats, feats])
     return torch.stack(bond_features).to(torch.float32)
 
 

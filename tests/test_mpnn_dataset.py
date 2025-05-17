@@ -43,7 +43,7 @@ class TestMPNNDataset:
         )
 
         input_entry = moldataset[0]
-        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
+        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds() * 2
 
         assert isinstance(input_entry, mpnn_dataset.MPNNEntry)
         assert isinstance(input_entry.target, torch.Tensor)
@@ -68,7 +68,7 @@ class TestMPNNDataset:
         )
 
         input_entry = moldataset[0]
-        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
+        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds() * 2
         num_nodes = Chem.MolFromSmiles(smi).GetNumAtoms()
 
         assert isinstance(input_entry, mpnn_dataset.MPNNEntry)
@@ -84,7 +84,7 @@ class TestMPNNDataset:
             constants.NUM_EDGE_FEATURES,
         )
         assert input_entry.adj_matrix.shape == (num_nodes + 1, num_nodes + 1)
-        assert input_entry.edge_indices.shape == (2, 32)
+        assert input_entry.edge_indices.shape == (2, num_bonds)
 
 
 if __name__ == "__main__":

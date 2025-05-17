@@ -49,7 +49,7 @@ class TestLayers:
         )
 
         input_entry = moldataset[0]
-        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
+        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds() * 2
 
         edge_network = mpnn_layers.MultiTowerEdge(
             n_edge_features=24,
@@ -106,7 +106,7 @@ class TestLayers:
         )
 
         input_entry = moldataset[0]
-        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
+        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds() * 2
 
         edge_network = mpnn_layers.EdgeLayer(
             n_edge_features=24,

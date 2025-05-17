@@ -82,7 +82,7 @@ class TestMolFeaturizer:
                 "C",
                 1,
             ),
-            ("O=C1OC(CN1c1ccc(cc1)N1CCOCC1=O)CNC(=O)c1ccc(s1)Cl", 32),
+            ("O=C1OC(CN1c1ccc(cc1)N1CCOCC1=O)CNC(=O)c1ccc(s1)Cl", 64),
         ],
     )
     def test_featurize_bonds(self, input_smiles, expected_size):

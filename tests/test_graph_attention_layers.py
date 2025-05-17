@@ -91,7 +91,7 @@ class TestLayers:
 
         assert len(att_out) == 3
         # Check messages have the right shape
-        assert att_out[0].shape == (num_bonds, 200)
+        assert att_out[0].shape == (num_bonds * 2, 200)
         # Check if node features have correct shape
         assert att_out[1].shape == (num_atoms, 200)
         # Check if edge indices of target nodes are correct
