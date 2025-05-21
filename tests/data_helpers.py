@@ -1,7 +1,9 @@
-import torch
-from collections.abc import Sequence
-import random
 import dataclasses
+import random
+from collections.abc import Sequence
+
+import torch
+
 from graphmodels import constants
 
 
@@ -85,5 +87,7 @@ def _generate_random_dataset(
             dsets.append(dset)
 
     return SampleBatch(
-        dsets=dsets, total_nodes=total_nodes, total_edges=total_edges
+        dsets=dsets,
+        total_nodes=total_nodes,
+        total_edges=total_edges,
     )
