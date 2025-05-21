@@ -28,7 +28,7 @@ class GraphAttentionLayerV3(nn.Module):
         self.dropout = dropout
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 2, 1)
-        self.norm = nn.BatchNorm1d(n_hidden_features)
+        self.norm = nn.LayerNorm(n_hidden_features)
 
     def compute_attention(
         self,
