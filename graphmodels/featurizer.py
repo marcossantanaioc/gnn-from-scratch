@@ -193,12 +193,14 @@ def featurize_atoms(
         bonds in the molecule.
     """
 
-    if molecule.GetNumAtoms() == 0:
+    num_atoms = molecule.GetNumAtoms()
+    if num_atoms == 0:
         raise NoAtomError("Cannot featurize a molecule with no atoms.")
 
     atoms = molecule.GetAtoms()
-    raw_features = []
+    raw_features = torch.zeros(num_atoms, constants.NUM_NODE_FEATURES)
     for atom in atoms:
+        idx = atom.GetIdx()
         atomic_number_one_hot = F.one_hot(
             torch.tensor(atom.GetAtomicNum()),
             num_classes=constants.MAX_ATOMIC_NUMBER,
@@ -227,6 +229,6 @@ def featurize_atoms(
             ],
             -1,
         )
-        raw_features.append(atom_feat)
+        raw_features[idx] = atom_feat
 
-    return torch.stack(raw_features).to(torch.float32)
+    return raw_features.to(torch.float32)
