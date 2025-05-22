@@ -1,40 +1,53 @@
+"""Utility functions to generate batches."""
+
 import dataclasses
 from collections.abc import Sequence
+from typing import Any
 
 import torch
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from torch.nn import functional as F  # noqa: N812
+from typeguard import typechecked as typechecker
 
 from graphmodels.datasets import mpnn_dataset, ngf_dataset
 
 
+@jt(typechecker=typechecker)
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class NeuralGraphFingerprintBatch:
     """Store batch information for the neural graph fingerprint model."""
 
-    adj_matrix: torch.Tensor
-    edge_index: torch.Tensor
-    node_features: torch.Tensor
-    targets: torch.Tensor
+    adj_matrix: Int[torch.Tensor, "nodes nodes"]
+    edge_index: Int[torch.Tensor, "2 edges"]
+    node_features: Float[torch.Tensor, "nodes node_features"]
+    targets: Float[torch.Tensor, " ground_truth"]
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Generates a dictionary from fields."""
         return dataclasses.asdict(self)
 
 
+@jt(typechecker=typechecker)
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class MPNNBatch:
     """Store batch information for the MPNNv1 model."""
 
-    edge_index: torch.Tensor
-    batch_vector: torch.Tensor
-    node_features: torch.Tensor
-    edge_features: torch.Tensor
-    targets: torch.Tensor
+    edge_index: Int[torch.Tensor, "2 edges"]
+    batch_vector: Int[torch.Tensor, " batch"]
+    node_features: Float[torch.Tensor, "nodes node_features"]
+    edge_features: Float[torch.Tensor, "edges edge_features"]
+    targets: Float[torch.Tensor, " ground_truth"]
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Generates a dictionary from fields."""
         return dataclasses.asdict(self)
 
 
-def create_batch_edge_index(edge_indices: Sequence[torch.Tensor]):
+@jt(typechecker=typechecker)
+def create_batch_edge_index(
+    edge_indices: Sequence[Int[torch.Tensor, "2 ..."]],
+) -> Int[torch.Tensor, "2 ..."]:
     """Creates a batch of edge indices.
 
     This function takes all edge index matrices in the data,
@@ -54,8 +67,8 @@ def create_batch_edge_index(edge_indices: Sequence[torch.Tensor]):
     offset = 0
     to_concat = []
     total_num_nodes = 0
-    for idx, edge_index in enumerate(edge_indices):
-        num_nodes = edge_index.max() + 1
+    for edge_index in edge_indices:
+        num_nodes = int(edge_index.max() + 1)
 
         edge_index_new = edge_index + offset
 
@@ -66,13 +79,14 @@ def create_batch_edge_index(edge_indices: Sequence[torch.Tensor]):
     return torch.cat(to_concat, dim=-1)
 
 
-def mpnn_collate_diag(batch: list[mpnn_dataset.MPNNEntry]):
+@jt(typechecker=typechecker)
+def mpnn_collate_diag(batch: list[mpnn_dataset.MPNNEntry]) -> MPNNBatch:
     """Generates a batch of inputs for MPNN."""
     # Build batch vector
     num_atoms_per_mol = [nf.node_features.size(0) for nf in batch]
     batch_vector = torch.cat(
         [
-            torch.full((n,), i, dtype=torch.long)
+            torch.full(size=(n,), fill_value=i, dtype=torch.long)
             for i, n in enumerate(num_atoms_per_mol)
         ],
     )  # [total_atoms], values in [0, batch_size-1]
@@ -91,6 +105,7 @@ def mpnn_collate_diag(batch: list[mpnn_dataset.MPNNEntry]):
     )
 
 
+@jt(typechecker=typechecker)
 def neuralgraph_collate_diag(batch: list[ngf_dataset.NeuralFingerprintEntry]):
     """Generates a batch of inputs for NeuralGraphFingerprint."""
     # Build batch vector
@@ -114,6 +129,7 @@ def neuralgraph_collate_diag(batch: list[ngf_dataset.NeuralFingerprintEntry]):
     )
 
 
+@jt(typechecker=typechecker)
 def neuralgraph_longest_collate(
     batch: list[ngf_dataset.NeuralFingerprintEntry],
     max_num_atoms: int,

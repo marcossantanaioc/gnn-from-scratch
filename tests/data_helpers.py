@@ -1,25 +1,36 @@
+"""Helper functions to generate batches for unittests."""
+
 import dataclasses
 import random
 from collections.abc import Sequence
 
 import torch
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
+from typeguard import typechecked as typechecker
 
 from graphmodels import constants
 
 
+@jt(typechecker=typechecker)
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class SampleEntry:
-    adj_matrix: torch.Tensor
-    edge_features: torch.Tensor
-    node_features: torch.Tensor
-    edge_indices: torch.Tensor
-    target: torch.Tensor
+    """Stores features and adjacency information for a test graph."""
+
+    adj_matrix: Int[torch.Tensor, "nodes nodes"]
+    edge_features: Float[torch.Tensor, "edges edge_features"]
+    node_features: Float[torch.Tensor, "nodes node_features"]
+    edge_indices: Int[torch.Tensor, "2 _"]
+    target: Float[torch.Tensor, ""]
     total_nodes: int
     total_edges: int
 
 
+@jt(typechecker=typechecker)
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class SampleBatch:
+    """Stores datasets in a batch."""
+
     dsets: Sequence[SampleEntry]
     total_nodes: int
     total_edges: int
@@ -33,7 +44,7 @@ def _create_random_graph(
 ):
     n_nodes = random.randint(min_num_nodes, max_num_nodes)
 
-    target = torch.rand(1)
+    target = torch.rand(1).squeeze(-1)
 
     adj_matrix = torch.rand(n_nodes, n_nodes)
     adj_matrix[adj_matrix > 0.5] = 1
@@ -59,7 +70,7 @@ def _create_random_graph(
         edge_indices=edge_indices,
         target=target,
         total_nodes=n_nodes,
-        total_edges=adj_matrix.sum(),
+        total_edges=int(adj_matrix.sum().item()),
     )
 
 
@@ -69,7 +80,7 @@ def _generate_random_dataset(
     n_node_features: int = constants.NUM_NODE_FEATURES,
     n_edge_features: int = constants.NUM_EDGE_FEATURES,
     num_examples: int = 10,
-) -> Sequence[SampleEntry]:
+) -> SampleBatch:
     dsets = []
     total_nodes = 0
     total_edges = 0

@@ -1,6 +1,8 @@
 # Testing & Linting
 pytest==8.3.5
 flake8==7.1.2
+jaxtyping==0.3.2
+typeguard==2.13.3
 
 # Core Libraries
 pandas

@@ -12,7 +12,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 dependencies = [
-    "torch==2.6.0",
+    "torch==2.7.0",
     "pandas",
     "etils",
     "importlib_resources",
@@ -21,6 +21,8 @@ dependencies = [
     "rdkit==2024.9.6",
     "tqdm==4.67.1",
     "matplotlib==3.10.1",
+    "jaxtyping==0.3.2",
+    "typeguard==2.13.3",
 ]
 
 [project.optional-dependencies]
@@ -39,3 +41,8 @@ graphmodels = ["*.txt", "*.csv"]  # Adjust if your package includes extra data f
 line-length = 79
 lint.extend-select = ["E501"]  # E501 = line too long
 fix = true
+ignore = ["F722"]
+exclude = ["build", "dist", "__pycache__", ".venv"]
+
+[tool.mypy]
+disable_error_code = ["import-untyped"]

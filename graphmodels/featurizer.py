@@ -1,24 +1,33 @@
+"""Functions to featurize molecules."""
+
 from typing import NamedTuple
 
 import torch
 import torch.nn.functional as F  # noqa: N812
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from rdkit import Chem
+from typeguard import typechecked as typechecker
 
 from graphmodels import constants
 
 
+@jt(typechecker=typechecker)
 class NoAtomError(Exception):
     pass
 
 
+@jt(typechecker=typechecker)
 class GraphConnectivity(NamedTuple):
     """Stores connectivity metrics."""
 
-    adj_matrix: torch.Tensor
-    edge_index: torch.Tensor
+    adj_matrix: Int[torch.Tensor, "nodes nodes"]
+    edge_index: Int[torch.Tensor, "2 edges"]
 
 
-def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
+def _featurize_one_bond(
+    bond: Chem.Bond,
+) -> Float[torch.Tensor, " edge_features"]:
     """Generates a tensor of bond features.
     This function returns a tensor representing bond features for every
     bond in the input molecule. Bond features consists of bond type,
@@ -49,7 +58,10 @@ def _featurize_one_bond(bond: Chem.Bond) -> torch.Tensor:
     return torch.cat([bond_type, is_conjugated, is_in_ring], dim=-1)
 
 
-def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
+@jt(typechecker=typechecker)
+def featurize_bonds_per_atom(
+    molecule: Chem.Mol,
+) -> Float[torch.Tensor, "nodes nodes edge_features"]:
     """Generates bond features represented as an atom-to-atom adjacency tensor.
 
     This function creates a tensor of shape (N, N, F), where:
@@ -97,10 +109,10 @@ def featurize_bonds_per_atom(molecule: Chem.Mol) -> torch.Tensor:
 
 def get_graph_connectivity(
     molecule: Chem.Mol,
-) -> torch.Tensor:
+) -> GraphConnectivity:
     """Generates adjacency matrix and edge indices for a molecular graph.
 
-    This function constructs atom-level connectivity information from an RDKit molecule.
+    This function constructs atom-level connectivity information a molecule.
     It returns:
 
     - An adjacency matrix of shape (N, N), where N is the number of atoms.
@@ -131,7 +143,9 @@ def get_graph_connectivity(
     )
 
 
-def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
+def featurize_bonds(
+    molecule: Chem.Mol,
+) -> Float[torch.Tensor, "edges edge_features"]:
     """Generates a compact tensor of bond features for a given molecule.
 
     This function iterates through each bond in the input `molecule` and
@@ -157,7 +171,9 @@ def featurize_bonds(molecule: Chem.Mol) -> torch.Tensor:
     return torch.stack(bond_features).to(torch.float32)
 
 
-def featurize_atoms(molecule: Chem.Mol) -> torch.Tensor:
+def featurize_atoms(
+    molecule: Chem.Mol,
+) -> Float[torch.Tensor, "nodes node_features"]:
     """Generates a tensor of atom features.
 
     Atom features consist of:

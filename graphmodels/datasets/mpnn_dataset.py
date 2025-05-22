@@ -1,22 +1,29 @@
+import dataclasses
+
 import torch
+import torch.nn.functional as F  # noqa: N812
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from rdkit import Chem
 from torch.utils import data as torch_data
-import torch.nn.functional as F
-import dataclasses
+from typeguard import typechecked as typechecker
+
 from graphmodels import featurizer
 
 
+@jt(typechecker=typechecker)
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class MPNNEntry:
     """Class to store input data for MPNN v1."""
 
-    node_features: torch.Tensor
-    edge_features: torch.Tensor
-    adj_matrix: torch.Tensor
-    edge_indices: torch.Tensor
-    target: torch.Tensor
+    node_features: Float[torch.Tensor, "nodes node_features"]
+    edge_features: Float[torch.Tensor, "edges edge_features"]
+    adj_matrix: Int[torch.Tensor, "nodes nodes"]
+    edge_indices: Int[torch.Tensor, "2 edges"]
+    target: Float[torch.Tensor, ""]
 
 
+@jt(typechecker=typechecker)
 class MPNNDataset(torch_data.Dataset):
     """Creates a molecule dataset based on the MPNN v1 model.
 
@@ -31,6 +38,8 @@ class MPNNDataset(torch_data.Dataset):
         smiles: A tuple of SMILES strings representing the molecules.
         targets: A tuple of float values corresponding to the target property
             for each molecule in `smiles`.
+        add_master_node: Whether to include a master node connected to all
+        nodes.
     """
 
     def __init__(
@@ -46,7 +55,15 @@ class MPNNDataset(torch_data.Dataset):
     def __len__(self):
         return len(self.smiles)
 
-    def transform(self, smiles: str) -> tuple[torch.Tensor, torch.Tensor]:
+    def transform(
+        self,
+        smiles: str,
+    ) -> tuple[
+        Float[torch.Tensor, "nodes node_features"],
+        Float[torch.Tensor, "edges edge_features"],
+        Int[torch.Tensor, "nodes nodes"],
+        Int[torch.Tensor, "2 edges"],
+    ]:
         """Featurize one molecule.
 
         Args:
@@ -74,7 +91,7 @@ class MPNNDataset(torch_data.Dataset):
     def __getitem__(
         self,
         idx,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> MPNNEntry:
         """Returns one element from the dataset.
 
         Args:

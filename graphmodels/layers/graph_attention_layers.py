@@ -1,9 +1,15 @@
+"""Layers implemeting graph attention."""
+
 import torch
 import torch.nn.functional as F  # noqa: N812
 import torch_scatter
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from torch import nn
+from typeguard import typechecked as typechecker
 
 
+@jt(typechecker=typechecker)
 class GraphAttentionLayerV3(nn.Module):
     """Implements a graph attention layer with skip connection.
 
@@ -32,9 +38,13 @@ class GraphAttentionLayerV3(nn.Module):
 
     def compute_attention(
         self,
-        node_features: torch.Tensor,
-        edge_index: torch.Tensor,
-    ) -> torch.Tensor:
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+    ) -> tuple[
+        Float[torch.Tensor, "attention_score 1"],  # noqa: F722
+        Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
+        Int[torch.Tensor, " target_index"],
+    ]:
         """Computes attention score between nodes i and j.
 
         The attention mechanism is defined as:
@@ -90,9 +100,19 @@ class GraphAttentionLayerV3(nn.Module):
 
     def forward(
         self,
-        node_features: torch.Tensor,
-        edge_index: torch.Tensor,
-    ):
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> Float[torch.Tensor, "nodes node_features"]:
+        """Performs the forward pass.
+
+        Args:
+            node_features: input features for the nodes.
+            edge_index: a matrix indicating which nodes are connected.
+            COO format (i.e. 2, N_EDGES).
+        Returns:
+            Updated node features after attention.
+
+        """
         message, transformed_node_features, target_nodes = (
             self.compute_attention(
                 node_features=node_features,
@@ -109,6 +129,7 @@ class GraphAttentionLayerV3(nn.Module):
         return self.norm(F.leaky_relu(out, self.scaling))
 
 
+@jt(typechecker=typechecker)
 class GraphAttentionLayerV2(nn.Module):
     """Updated graph attention layer with edge features.
 
@@ -135,10 +156,14 @@ class GraphAttentionLayerV2(nn.Module):
 
     def compute_attention(
         self,
-        node_features: torch.Tensor,
-        edge_features: torch.Tensor,
-        edge_index: torch.Tensor,
-    ) -> torch.Tensor:
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> tuple[
+        Float[torch.Tensor, "attention_score 1"],  # noqa: F722
+        Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
+        Int[torch.Tensor, " target_index"],
+    ]:
         """Computes attention score between nodes i and j.
 
         The attention mechanism is defined as:
@@ -194,10 +219,22 @@ class GraphAttentionLayerV2(nn.Module):
 
     def forward(
         self,
-        node_features: torch.Tensor,
-        edge_features: torch.Tensor,
-        edge_index: torch.Tensor,
-    ):
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> Float[torch.Tensor, "nodes node_features"]:
+        """Performs the forward pass.
+
+        Args:
+            node_features: input features for the nodes.
+            edge_features: input features for the edges.
+            edge_index: a matrix indicating which nodes are connected.
+            COO format (i.e. 2, N_EDGES).
+        Returns:
+            Updated node features after attention step.
+            The update includes edge features.
+
+        """
         message, node_features, target_nodes = self.compute_attention(
             node_features=node_features,
             edge_features=edge_features,
@@ -213,6 +250,7 @@ class GraphAttentionLayerV2(nn.Module):
         return F.leaky_relu(out, self.scaling)
 
 
+@jt(typechecker=typechecker)
 class GraphAttentionLayerV1(nn.Module):
     """Implements an initial implementation of a graph attention layer.
 
@@ -237,9 +275,13 @@ class GraphAttentionLayerV1(nn.Module):
 
     def compute_attention(
         self,
-        node_features: torch.Tensor,
-        edge_index: torch.Tensor,
-    ) -> torch.Tensor:
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> tuple[
+        Float[torch.Tensor, "attention_score 1"],  # noqa: F722
+        Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
+        Int[torch.Tensor, " target_index"],
+    ]:
         """Computes attention score between nodes i and j.
 
         The attention mechanism is defined as:
@@ -293,9 +335,19 @@ class GraphAttentionLayerV1(nn.Module):
 
     def forward(
         self,
-        node_features: torch.Tensor,
-        edge_index: torch.Tensor,
-    ):
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> Float[torch.Tensor, "nodes node_features"]:
+        """Performs the forward pass.
+
+        Args:
+            node_features: input features for the nodes.
+            edge_index: a matrix indicating which nodes are connected.
+            COO format (i.e. 2, N_EDGES).
+        Returns:
+            Updated node features after attention.
+
+        """
         message, node_features, target_nodes = self.compute_attention(
             node_features=node_features,
             edge_index=edge_index,

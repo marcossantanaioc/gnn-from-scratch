@@ -1,8 +1,13 @@
+import torch
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from torch import nn
+from typeguard import typechecked as typechecker
 
 from graphmodels.layers import mpnn_layers
 
 
+@jt(typechecker=typechecker)
 class MPNNv1(nn.Module):
     """
     A Message Passing Neural Network (MPNN) model for graph-level prediction.
@@ -56,7 +61,6 @@ class MPNNv1(nn.Module):
         self.update_layer = mpnn_layers.MessagePassingLayer(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_hidden_features=n_hidden_features,
             n_update_steps=n_update_steps,
             n_towers=n_towers,
             dropout=dropout,
@@ -68,13 +72,22 @@ class MPNNv1(nn.Module):
             num_layers=n_readout_steps,
         )
 
-    def forward(self, x):
-        node_features, edge_features, edge_index, batch_vector = x
-
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+        batch_vector: Int[torch.Tensor, " batch"],
+    ) -> Float[torch.Tensor, "out 1"]:
         updated_nodes = self.update_layer(
-            (node_features, edge_features, edge_index),
+            node_features=node_features,
+            edge_features=edge_features,
+            edge_index=edge_index,
         )
 
-        readout = self.readout_layer((updated_nodes, batch_vector))
+        readout = self.readout_layer(
+            node_features=updated_nodes,
+            batch_vector=batch_vector,
+        )
 
         return readout

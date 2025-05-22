@@ -1,7 +1,11 @@
 import torch
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from torch import nn
+from typeguard import typechecked as typechecker
 
 
+@jt(typechecker=typechecker)
 class MultiTowerEdge(nn.Module):
     """Implements multitower edge network as described by Gilmer et al."""
 
@@ -28,8 +32,12 @@ class MultiTowerEdge(nn.Module):
             nn.Dropout(dropout),
         )
 
-    def forward(self, x):
-        edge_features, node_features, edge_index = x
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+    ):
         neighbors_index = edge_index[1]
 
         neighbors_node_features = node_features[neighbors_index]
@@ -53,6 +61,7 @@ class MultiTowerEdge(nn.Module):
         )
 
 
+@jt(typechecker=typechecker)
 class EdgeLayer(nn.Module):
     """Implements the Edge network as described in Gilmer et al.'s MPNN.
 
@@ -102,8 +111,12 @@ class EdgeLayer(nn.Module):
 
         self.edgelayer = nn.Sequential(*modules)
 
-    def forward(self, x):
-        edge_features, node_features, edge_index = x
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+    ):
         neighbors_index = edge_index[1]
 
         neighbors_node_features = node_features[neighbors_index]
@@ -119,6 +132,7 @@ class EdgeLayer(nn.Module):
         return (message @ neighbors_node_features.unsqueeze(-1)).squeeze(-1)
 
 
+@jt(typechecker=typechecker)
 class MessagePassingLayer(nn.Module):
     """Implements a Gated Graph Neural Networks (GG-NN).
 
@@ -162,7 +176,6 @@ class MessagePassingLayer(nn.Module):
         self,
         n_node_features: int,
         n_edge_features: int,
-        n_hidden_features: int,
         n_towers: int = 8,
         n_update_steps: int = 3,
         dropout: float = 0.25,
@@ -187,13 +200,18 @@ class MessagePassingLayer(nn.Module):
             nn.Linear(n_node_features, n_node_features),
         )
 
-    def forward(self, x):
-        node_features, edge_features, edge_index = x
-
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+    ):
         for _ in range(self.n_update_steps):
             # Collect messages
             messages = self.edge_layer(
-                (edge_features, node_features, edge_index),
+                edge_features=edge_features,
+                node_features=node_features,
+                edge_index=edge_index,
             )
 
             target_nodes = edge_index[0]
@@ -209,6 +227,7 @@ class MessagePassingLayer(nn.Module):
         return self.output_layer(node_features)
 
 
+@jt(typechecker=typechecker)
 class ReadoutLayer(nn.Module):
     """Aggregates node features to obtain a graph-level representation
     suitable for graph-level tasks within a Message Passing Neural Network
@@ -275,10 +294,12 @@ class ReadoutLayer(nn.Module):
         self.readout = nn.Sequential(*layers)
         self.output_layer = nn.Linear(n_hidden_features, n_out_features)
 
-    def forward(self, x):
-        updated_node_features, batch_vector = x
-
-        readout = self.readout(updated_node_features)
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        batch_vector: Int[torch.Tensor, " batch"],
+    ):
+        readout = self.readout(node_features)
 
         num_batches = int(batch_vector.max()) + 1
         emb_dim = readout.size(-1)

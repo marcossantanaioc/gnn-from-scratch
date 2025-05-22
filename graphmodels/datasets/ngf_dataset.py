@@ -1,21 +1,27 @@
+import dataclasses
+
 import torch
+from jaxtyping import Float, Int
+from jaxtyping import jaxtyped as jt
 from rdkit import Chem
 from torch.utils import data as torch_data
-import torch.nn.functional as F
-import dataclasses
+from typeguard import typechecked as typechecker
+
 from graphmodels import featurizer
 
 
+@jt(typechecker=typechecker)
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class NeuralFingerprintEntry:
     """Class to store input data for neuralgraph fingerprint."""
 
-    node_features: torch.Tensor
-    edge_features: torch.Tensor
-    adj_matrix: torch.Tensor
-    target: torch.Tensor
+    node_features: Float[torch.Tensor, "nodes node_features"]
+    edge_features: Float[torch.Tensor, "nodes nodes edge_features"]
+    adj_matrix: Int[torch.Tensor, "nodes nodes"]
+    target: Float[torch.Tensor, ""]
 
 
+@jt(typechecker=typechecker)
 class NeuralFingerprintDataset(torch_data.Dataset):
     """Creates a molecule dataset based on neural fingerprints."""
 
@@ -23,10 +29,17 @@ class NeuralFingerprintDataset(torch_data.Dataset):
         self.smiles = smiles
         self.targets = targets
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.smiles)
 
-    def transform(self, smiles: str) -> tuple[torch.Tensor, torch.Tensor]:
+    def transform(
+        self,
+        smiles: str,
+    ) -> tuple[
+        Float[torch.Tensor, "nodes node_features"],
+        Float[torch.Tensor, "edges edge_features"],
+        Int[torch.Tensor, "nodes nodes"],
+    ]:
         """Featurize one molecule.
 
         Args:
@@ -38,10 +51,10 @@ class NeuralFingerprintDataset(torch_data.Dataset):
 
         node_features = featurizer.featurize_atoms(mol).to(torch.float32)
         edge_features = featurizer.featurize_bonds_per_atom(mol).to(
-            torch.float32
+            torch.float32,
         )
         adj_matrix = torch.tensor(Chem.GetAdjacencyMatrix(mol)).to(
-            torch.float32,
+            torch.long,
         )
 
         return node_features, edge_features, adj_matrix
@@ -49,7 +62,7 @@ class NeuralFingerprintDataset(torch_data.Dataset):
     def __getitem__(
         self,
         idx,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> NeuralFingerprintEntry:
         """Returns one element from the dataset.
 
         Args:

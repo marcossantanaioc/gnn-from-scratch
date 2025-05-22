@@ -1,7 +1,7 @@
 *.pt
 .conda/
 .ipynb_checkpoints/
+__pycache__
 .pytest_cache/
 *.egg-info
-notebooks/gnns.ipynb
-notebooks/neuralgraphfingerprint.ipynb
+notebooks/

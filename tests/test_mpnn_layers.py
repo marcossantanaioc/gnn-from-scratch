@@ -1,9 +1,10 @@
+import pytest
+import torch
+from rdkit import Chem
+from torch import nn
+
 from graphmodels.datasets import mpnn_dataset
 from graphmodels.layers import mpnn_layers
-import pytest
-from rdkit import Chem
-import torch
-from torch import nn
 
 
 class TestLayers:
@@ -57,18 +58,15 @@ class TestLayers:
             n_node_features=136,
         )
         message = edge_network(
-            (
-                input_entry.edge_features,
-                input_entry.node_features,
-                input_entry.edge_indices,
-            )
+            edge_features=input_entry.edge_features,
+            node_features=input_entry.node_features,
+            edge_index=input_entry.edge_indices,
         )
 
         assert message.shape == (num_bonds, 136)
 
     @pytest.mark.parametrize(
-        "n_edge_features, n_edge_hidden_features, n_node_features, n_update_steps,"
-        " expected_num_layers",
+        "e_feats,e_hidden,n_node_features, n_update_steps,layers",
         [
             (24, 100, 136, 2, 3),
             (50, 512, 20, 3, 4),
@@ -76,27 +74,27 @@ class TestLayers:
     )
     def test_edge_layer_number_of_layers(
         self,
-        n_edge_features,
-        n_edge_hidden_features,
+        e_feats,
+        e_hidden,
         n_node_features,
         n_update_steps,
-        expected_num_layers,
+        layers,
     ):
         edge_network = mpnn_layers.EdgeLayer(
-            n_edge_features=n_edge_features,
-            n_edge_hidden_features=n_edge_hidden_features,
+            n_edge_features=e_feats,
+            n_edge_hidden_features=e_hidden,
             n_node_features=n_node_features,
             n_update_steps=n_update_steps,
         )
         assert (
             len(
                 [
-                    l
-                    for l in edge_network.edgelayer.modules()
-                    if isinstance(l, torch.nn.Linear)
-                ]
+                    lay
+                    for lay in edge_network.edgelayer.modules()
+                    if isinstance(lay, torch.nn.Linear)
+                ],
             )
-            == expected_num_layers
+            == layers
         )  # Includes input layer
 
     def test_edge_layer_output_shape(self, smi):
@@ -115,33 +113,29 @@ class TestLayers:
             n_update_steps=2,
         )
         message = edge_network(
-            (
-                input_entry.edge_features,
-                input_entry.node_features,
-                input_entry.edge_indices,
-            )
+            edge_features=input_entry.edge_features,
+            node_features=input_entry.node_features,
+            edge_index=input_entry.edge_indices,
         )
 
         assert message.shape == (num_bonds, 136)
 
     @pytest.mark.parametrize(
-        "n_node_features, n_edge_features, n_hidden_features, n_update_steps",
+        "n_node_features,n_edge_features,n_update_steps",
         [
-            (136, 24, 512, 2),
-            (200, 16, 200, 3),
+            (136, 24, 2),
+            (200, 16, 3),
         ],
     )
     def test_update_gru_cell_weights_and_updates(
         self,
         n_node_features,
         n_edge_features,
-        n_hidden_features,
         n_update_steps,
     ):
         update_network = mpnn_layers.MessagePassingLayer(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_hidden_features=n_hidden_features,
             n_update_steps=n_update_steps,
         )
 
@@ -158,21 +152,17 @@ class TestLayers:
         )
 
         input_entry = moldataset[0]
-        num_bonds = Chem.MolFromSmiles(smi).GetNumBonds()
 
         update_network = mpnn_layers.MessagePassingLayer(
             n_node_features=136,
             n_edge_features=24,
-            n_hidden_features=136,
             n_update_steps=3,
         )
 
         out = update_network(
-            (
-                input_entry.node_features,
-                input_entry.edge_features,
-                input_entry.edge_indices,
-            )
+            node_features=input_entry.node_features,
+            edge_features=input_entry.edge_features,
+            edge_index=input_entry.edge_indices,
         )
 
         assert out.shape == input_entry.node_features.shape
@@ -200,10 +190,10 @@ class TestLayers:
         assert (
             len(
                 [
-                    l
-                    for l in readout_network.readout.modules()
-                    if isinstance(l, torch.nn.Linear)
-                ]
+                    lay
+                    for lay in readout_network.readout.modules()
+                    if isinstance(lay, torch.nn.Linear)
+                ],
             )
             == num_layers
         )
@@ -223,10 +213,13 @@ class TestLayers:
             num_layers=3,
         )
         batch_vector = torch.zeros(input_entry.node_features.size(0)).to(
-            torch.int32
+            torch.int32,
         )
 
-        out = readout_network((input_entry.node_features, batch_vector))
+        out = readout_network(
+            node_features=input_entry.node_features,
+            batch_vector=batch_vector,
+        )
 
         assert out.shape == (1, 1)
 
