@@ -39,7 +39,7 @@ class TestGraphAttentionLayers:
                 ],
             )
             == num_layers
-        )  # Includes input layer
+        )
 
     def test_graph_attention_layer_v3_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
@@ -84,11 +84,8 @@ class TestGraphAttentionLayers:
         )
 
         assert len(att_out) == 3
-        # Check messages have the right shape
         assert att_out[0].shape == (num_bonds * 2, 200)
-        # Check if node features have correct shape
         assert att_out[1].shape == (num_atoms, 200)
-        # Check if edge indices of target nodes are correct
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
     @pytest.mark.parametrize(
@@ -119,7 +116,7 @@ class TestGraphAttentionLayers:
                 ],
             )
             == num_layers
-        )  # Includes input layer
+        )
 
     def test_graph_attention_layer_v2_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
@@ -168,11 +165,8 @@ class TestGraphAttentionLayers:
         )
 
         assert len(att_out) == 3
-        # Check messages have the right shape
         assert att_out[0].shape == (num_bonds * 2, 200)
-        # Check if node features have correct shape
         assert att_out[1].shape == (num_atoms, 200)
-        # Check if edge indices of target nodes are correct
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
     @pytest.mark.parametrize(
@@ -201,7 +195,7 @@ class TestGraphAttentionLayers:
                 ],
             )
             == num_layers
-        )  # Includes input layer
+        )
 
     def test_graph_attention_layer_v1_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
@@ -246,11 +240,8 @@ class TestGraphAttentionLayers:
         )
 
         assert len(att_out) == 3
-        # Check messages have the right shape
         assert att_out[0].shape == (num_bonds * 2, 200)
-        # Check if node features have correct shape
         assert att_out[1].shape == (num_atoms, 200)
-        # Check if edge indices of target nodes are correct
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
 
