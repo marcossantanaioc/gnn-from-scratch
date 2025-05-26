@@ -244,8 +244,6 @@ class TestGraphAttentionLayers:
         assert att_out[1].shape == (num_atoms, 200)
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
-    ##########
-
     @pytest.mark.parametrize(
         "n_node_features,n_hidden_features,num_layers,num_heads",
         [
@@ -297,6 +295,15 @@ class TestGraphAttentionLayers:
         )
 
         assert out.shape == (num_atoms, 200)
+
+    def test_multihead_graph_attention_layer_raises_wrong_pooling(self):
+        with pytest.raises(ValueError):
+            graph_attention_layers.MultiHeadGATLayer(
+                n_node_features=136,
+                n_hidden_features=200,
+                dropout=0.1,
+                agg_method="ERROR",
+            )
 
 
 if __name__ == "_main_":

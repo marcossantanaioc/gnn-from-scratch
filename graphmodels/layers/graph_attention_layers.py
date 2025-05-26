@@ -1,6 +1,7 @@
 """Layers implemeting graph attention."""
 
 import torch
+from graphmodels.layers import constants as layer_constants
 import torch.nn.functional as F  # noqa: N812
 import torch_scatter
 from jaxtyping import Float, Int
@@ -365,16 +366,7 @@ class GraphAttentionLayer(nn.Module):
         return F.elu(out)
 
 
-def _create_output_layer(
-    head_dimension: int,
-    n_hidden_features: int,
-    agg_method: str,
-) -> nn.Module:
-    if agg_method in ["max", "mean"]:
-        return nn.Linear(head_dimension, n_hidden_features)
-    return nn.Identity()
-
-
+@jt(typechecker=typechecker)
 class MultiHeadGATLayer(nn.Module):
     """Implements a simple graph attention layer.
 
@@ -422,11 +414,31 @@ class MultiHeadGATLayer(nn.Module):
             )
         self.multiheadgat = nn.ModuleList(attention_heads)
 
-        self.out_layer = _create_output_layer(
+        self.out_layer = self._create_output_layer(
             head_dimension=self.head_dimension,
             n_hidden_features=self.n_hidden_features,
             agg_method=agg_method,
         )
+
+    def _create_output_layer(
+        self,
+        head_dimension: int,
+        n_hidden_features: int,
+        agg_method: str,
+    ) -> nn.Module:
+        """Creates output layer using input pooling strategy.
+
+        Args:
+            head_dimension: number of input features in an attention head
+            n_hidden_features: number of output features of the layer
+            agg_method: type of pooling to perform. The user must choose from
+            'mean', 'max' or 'concat'. If the choice is 'concat', an identiy
+            layer is used.
+
+        """
+        if agg_method == layer_constants.PoolingMethod.MEAN:
+            return nn.Linear(head_dimension, n_hidden_features)
+        return nn.Identity()
 
     def forward(
         self,
@@ -437,6 +449,6 @@ class MultiHeadGATLayer(nn.Module):
             attn_head(node_features, edge_index)
             for attn_head in self.multiheadgat
         ]
-        if self.agg_method == "concat":
+        if self.agg_method == layer_constants.PoolingMethod.CONCAT:
             return F.elu(self.out_layer(torch.cat(head_outs, dim=-1)))
         return F.elu(self.out_layer(torch.mean(torch.stack(head_outs), dim=0)))
