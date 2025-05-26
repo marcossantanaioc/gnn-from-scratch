@@ -244,8 +244,6 @@ class TestGraphAttentionLayers:
         assert att_out[1].shape == (num_atoms, 200)
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
-    ##########
-
     @pytest.mark.parametrize(
         "n_node_features,n_hidden_features,num_layers,num_heads",
         [
