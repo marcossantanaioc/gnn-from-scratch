@@ -367,8 +367,11 @@ class GraphAttentionLayer(nn.Module):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 @jt(typechecker=typechecker)
 =======
+=======
+>>>>>>> f715337... Added multihead graph attention layer
 def _create_output_layer(
     head_dimension: int,
     n_hidden_features: int,
@@ -379,6 +382,9 @@ def _create_output_layer(
     return nn.Identity()
 
 
+<<<<<<< HEAD
+>>>>>>> f715337... Added multihead graph attention layer
+=======
 >>>>>>> f715337... Added multihead graph attention layer
 class MultiHeadGATLayer(nn.Module):
     """Implements a simple graph attention layer.
@@ -428,7 +434,11 @@ class MultiHeadGATLayer(nn.Module):
         self.multiheadgat = nn.ModuleList(attention_heads)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         self.out_layer = self._create_output_layer(
+=======
+        self.out_layer = _create_output_layer(
+>>>>>>> f715337... Added multihead graph attention layer
 =======
         self.out_layer = _create_output_layer(
 >>>>>>> f715337... Added multihead graph attention layer
@@ -437,6 +447,7 @@ class MultiHeadGATLayer(nn.Module):
             agg_method=agg_method,
         )
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     def _create_output_layer(
         self,
@@ -460,6 +471,8 @@ class MultiHeadGATLayer(nn.Module):
 
 =======
 >>>>>>> f715337... Added multihead graph attention layer
+=======
+>>>>>>> f715337... Added multihead graph attention layer
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
@@ -470,7 +483,11 @@ class MultiHeadGATLayer(nn.Module):
             for attn_head in self.multiheadgat
         ]
 <<<<<<< HEAD
+<<<<<<< HEAD
         if self.agg_method == layer_constants.PoolingMethod.CONCAT:
+=======
+        if self.agg_method == "concat":
+>>>>>>> f715337... Added multihead graph attention layer
 =======
         if self.agg_method == "concat":
 >>>>>>> f715337... Added multihead graph attention layer

@@ -245,6 +245,11 @@ class TestGraphAttentionLayers:
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    ##########
+
+>>>>>>> f715337... Added multihead graph attention layer
 =======
     ##########
 
@@ -302,6 +307,7 @@ class TestGraphAttentionLayers:
         assert out.shape == (num_atoms, 200)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     def test_multihead_graph_attention_layer_raises_wrong_pooling(self):
         with pytest.raises(ValueError):
             graph_attention_layers.MultiHeadGATLayer(
@@ -311,6 +317,8 @@ class TestGraphAttentionLayers:
                 agg_method="ERROR",
             )
 
+=======
+>>>>>>> f715337... Added multihead graph attention layer
 =======
 >>>>>>> f715337... Added multihead graph attention layer
 
