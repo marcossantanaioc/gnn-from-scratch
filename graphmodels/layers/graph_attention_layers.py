@@ -1,13 +1,14 @@
 """Layers implemeting graph attention."""
 
 import torch
-from graphmodels.layers import constants as layer_constants
 import torch.nn.functional as F  # noqa: N812
 import torch_scatter
 from jaxtyping import Float, Int
 from jaxtyping import jaxtyped as jt
 from torch import nn
 from typeguard import typechecked as typechecker
+
+from graphmodels.layers import constants as layer_constants
 
 
 @jt(typechecker=typechecker)
@@ -396,7 +397,11 @@ class MultiHeadGATLayer(nn.Module):
     ):
         super().__init__()
 
-        if agg_method not in ["mean", "concat", "max"]:
+        if agg_method not in [
+            layer_constants.PoolingMethod.MEAN,
+            layer_constants.PoolingMethod.CONCAT,
+            layer_constants.PoolingMethod.MAX,
+        ]:
             raise ValueError("Only mean, max and concat are available.")
 
         self.num_heads = num_heads
@@ -438,6 +443,6 @@ class MultiHeadGATLayer(nn.Module):
             attn_head(node_features, edge_index)
             for attn_head in self.multiheadgat
         ]
-        if self.agg_method == "concat":
+        if self.agg_method == layer_constants.PoolingMethod.CONCAT:
             return F.elu(self.out_layer(torch.cat(head_outs, dim=-1)))
         return F.elu(self.out_layer(torch.mean(torch.stack(head_outs), dim=0)))

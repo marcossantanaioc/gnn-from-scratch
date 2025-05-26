@@ -296,6 +296,15 @@ class TestGraphAttentionLayers:
 
         assert out.shape == (num_atoms, 200)
 
+    def test_multihead_graph_attention_layer_bad_pooling(self):
+        with pytest.raises(ValueError):
+            graph_attention_layers.MultiHeadGATLayer(
+                n_node_features=136,
+                n_hidden_features=200,
+                dropout=0.1,
+                agg_method="ERROR",
+            )
+
 
 if __name__ == "_main_":
     pytest.main([__file__])
