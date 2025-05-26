@@ -366,12 +366,6 @@ class GraphAttentionLayer(nn.Module):
         return F.elu(out)
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-@jt(typechecker=typechecker)
-=======
-=======
->>>>>>> f715337... Added multihead graph attention layer
 def _create_output_layer(
     head_dimension: int,
     n_hidden_features: int,
@@ -382,10 +376,6 @@ def _create_output_layer(
     return nn.Identity()
 
 
-<<<<<<< HEAD
->>>>>>> f715337... Added multihead graph attention layer
-=======
->>>>>>> f715337... Added multihead graph attention layer
 class MultiHeadGATLayer(nn.Module):
     """Implements a simple graph attention layer.
 
@@ -433,46 +423,12 @@ class MultiHeadGATLayer(nn.Module):
             )
         self.multiheadgat = nn.ModuleList(attention_heads)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        self.out_layer = self._create_output_layer(
-=======
         self.out_layer = _create_output_layer(
->>>>>>> f715337... Added multihead graph attention layer
-=======
-        self.out_layer = _create_output_layer(
->>>>>>> f715337... Added multihead graph attention layer
             head_dimension=self.head_dimension,
             n_hidden_features=self.n_hidden_features,
             agg_method=agg_method,
         )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    def _create_output_layer(
-        self,
-        head_dimension: int,
-        n_hidden_features: int,
-        agg_method: str,
-    ) -> nn.Module:
-        """Creates output layer using input pooling strategy.
-
-        Args:
-            head_dimension: number of input features in an attention head
-            n_hidden_features: number of output features of the layer
-            agg_method: type of pooling to perform. The user must choose from
-            'mean', 'max' or 'concat'. If the choice is 'concat', an identiy
-            layer is used.
-
-        """
-        if agg_method == layer_constants.PoolingMethod.MEAN:
-            return nn.Linear(head_dimension, n_hidden_features)
-        return nn.Identity()
-
-=======
->>>>>>> f715337... Added multihead graph attention layer
-=======
->>>>>>> f715337... Added multihead graph attention layer
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
@@ -482,14 +438,6 @@ class MultiHeadGATLayer(nn.Module):
             attn_head(node_features, edge_index)
             for attn_head in self.multiheadgat
         ]
-<<<<<<< HEAD
-<<<<<<< HEAD
-        if self.agg_method == layer_constants.PoolingMethod.CONCAT:
-=======
         if self.agg_method == "concat":
->>>>>>> f715337... Added multihead graph attention layer
-=======
-        if self.agg_method == "concat":
->>>>>>> f715337... Added multihead graph attention layer
             return F.elu(self.out_layer(torch.cat(head_outs, dim=-1)))
         return F.elu(self.out_layer(torch.mean(torch.stack(head_outs), dim=0)))
