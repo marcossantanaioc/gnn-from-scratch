@@ -10,7 +10,7 @@ from typeguard import typechecked as typechecker
 
 
 @jt(typechecker=typechecker)
-class GraphAttentionLayerV3(nn.Module):
+class GraphAttentionLayerSkip(nn.Module):
     """Implements a graph attention layer with skip connection.
 
     After the aggregation step, we add the transformed node features
@@ -130,8 +130,8 @@ class GraphAttentionLayerV3(nn.Module):
 
 
 @jt(typechecker=typechecker)
-class GraphAttentionLayerV2(nn.Module):
-    """Updated graph attention layer with edge features.
+class GraphAttentionLayerEdge(nn.Module):
+    """Implements a graph attention layer with edge features.
 
     Attributes
         n_node_features: number of input node features.
@@ -251,8 +251,8 @@ class GraphAttentionLayerV2(nn.Module):
 
 
 @jt(typechecker=typechecker)
-class GraphAttentionLayerV1(nn.Module):
-    """Implements an initial implementation of a graph attention layer.
+class GraphAttentionLayer(nn.Module):
+    """Implements a graph attention layer.
 
     Attributes
         n_node_features: number of input node features.

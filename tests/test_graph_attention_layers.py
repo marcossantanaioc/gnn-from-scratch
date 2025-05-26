@@ -20,13 +20,13 @@ class TestGraphAttentionLayers:
             (64, 512, 2),
         ],
     )
-    def test_graph_attention_layer_v3_number_of_layers(
+    def test_graph_attention_layer_skip_number_of_layers(
         self,
         n_node_features,
         n_hidden_features,
         num_layers,
     ):
-        gat_layer = graph_attention_layers.GraphAttentionLayerV3(
+        gat_layer = graph_attention_layers.GraphAttentionLayerSkip(
             n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
         )
@@ -41,7 +41,7 @@ class TestGraphAttentionLayers:
             == num_layers
         )
 
-    def test_graph_attention_layer_v3_output_shape(self, smi):
+    def test_graph_attention_layer_skip_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -50,7 +50,7 @@ class TestGraphAttentionLayers:
         input_entry = moldataset[0]
         num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
 
-        gat_layer = graph_attention_layers.GraphAttentionLayerV3(
+        gat_layer = graph_attention_layers.GraphAttentionLayerSkip(
             n_node_features=136,
             n_hidden_features=200,
         )
@@ -61,7 +61,7 @@ class TestGraphAttentionLayers:
 
         assert out.shape == (num_atoms, 200)
 
-    def test_graph_attention_layer_v3_output(self, smi):
+    def test_graph_attention_layer_skip_output(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -72,7 +72,7 @@ class TestGraphAttentionLayers:
         num_atoms = mol.GetNumAtoms()
         num_bonds = mol.GetNumBonds()
 
-        gat_layer = graph_attention_layers.GraphAttentionLayerV3(
+        gat_layer = graph_attention_layers.GraphAttentionLayerSkip(
             n_node_features=136,
             n_hidden_features=200,
             dropout=0.25,
@@ -95,14 +95,14 @@ class TestGraphAttentionLayers:
             (64, 24, 512, 3),
         ],
     )
-    def test_graph_attention_layer_v2_number_of_layers(
+    def test_graph_attention_layer_edge_number_of_layers(
         self,
         n_node_features,
         n_edge_features,
         n_hidden_features,
         num_layers,
     ):
-        gat_layer = graph_attention_layers.GraphAttentionLayerV2(
+        gat_layer = graph_attention_layers.GraphAttentionLayerEdge(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
             n_hidden_features=n_hidden_features,
@@ -118,7 +118,7 @@ class TestGraphAttentionLayers:
             == num_layers
         )
 
-    def test_graph_attention_layer_v2_output_shape(self, smi):
+    def test_graph_attention_layer_edge_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -127,7 +127,7 @@ class TestGraphAttentionLayers:
         input_entry = moldataset[0]
         num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
 
-        gat_layer = graph_attention_layers.GraphAttentionLayerV2(
+        gat_layer = graph_attention_layers.GraphAttentionLayerEdge(
             n_node_features=136,
             n_hidden_features=200,
             n_edge_features=24,
@@ -140,7 +140,7 @@ class TestGraphAttentionLayers:
 
         assert out.shape == (num_atoms, 200)
 
-    def test_graph_attention_layer_v2_output(self, smi):
+    def test_graph_attention_layer_edge_output(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -151,7 +151,7 @@ class TestGraphAttentionLayers:
         num_atoms = mol.GetNumAtoms()
         num_bonds = mol.GetNumBonds()
 
-        gat_layer = graph_attention_layers.GraphAttentionLayerV2(
+        gat_layer = graph_attention_layers.GraphAttentionLayerEdge(
             n_node_features=136,
             n_hidden_features=200,
             n_edge_features=24,
@@ -176,13 +176,13 @@ class TestGraphAttentionLayers:
             (64, 512, 2),
         ],
     )
-    def test_graph_attention_layer_v1_number_of_layers(
+    def test_graph_attention_layer_number_of_layers(
         self,
         n_node_features,
         n_hidden_features,
         num_layers,
     ):
-        gat_layer = graph_attention_layers.GraphAttentionLayerV1(
+        gat_layer = graph_attention_layers.GraphAttentionLayer(
             n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
         )
@@ -197,7 +197,7 @@ class TestGraphAttentionLayers:
             == num_layers
         )
 
-    def test_graph_attention_layer_v1_output_shape(self, smi):
+    def test_graph_attention_layer_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -206,7 +206,7 @@ class TestGraphAttentionLayers:
         input_entry = moldataset[0]
         num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
 
-        gat_layer = graph_attention_layers.GraphAttentionLayerV1(
+        gat_layer = graph_attention_layers.GraphAttentionLayer(
             n_node_features=136,
             n_hidden_features=200,
         )
@@ -217,7 +217,7 @@ class TestGraphAttentionLayers:
 
         assert out.shape == (num_atoms, 200)
 
-    def test_graph_attention_layer_v1_output(self, smi):
+    def test_graph_attention_layer_output(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
@@ -228,7 +228,7 @@ class TestGraphAttentionLayers:
         num_atoms = mol.GetNumAtoms()
         num_bonds = mol.GetNumBonds()
 
-        gat_layer = graph_attention_layers.GraphAttentionLayerV1(
+        gat_layer = graph_attention_layers.GraphAttentionLayer(
             n_node_features=136,
             n_hidden_features=200,
             dropout=0.25,
