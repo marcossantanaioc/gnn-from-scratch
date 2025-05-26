@@ -74,7 +74,7 @@ class GraphAttentionLayerSkip(nn.Module):
             Attention scores for nodes.
         """
 
-        h = F.leaky_relu(self.w(node_features), self.scaling)
+        h = self.w(node_features)
 
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
@@ -84,7 +84,7 @@ class GraphAttentionLayerSkip(nn.Module):
         h_j = h[neighbors_nodes]
         h_concat = torch.cat([h_i, h_j], dim=-1)
 
-        eij = self.attn(h_concat)
+        eij = F.leaky_relu(self.attn(h_concat), negative_slope=self.scaling)
 
         attention_score = F.dropout(
             torch_scatter.scatter_softmax(
@@ -126,7 +126,7 @@ class GraphAttentionLayerSkip(nn.Module):
             dim_size=transformed_node_features.size(0),
         )
         out = out + transformed_node_features
-        return self.norm(F.leaky_relu(out, self.scaling))
+        return self.norm(F.elu(out))
 
 
 @jt(typechecker=typechecker)
@@ -194,8 +194,8 @@ class GraphAttentionLayerEdge(nn.Module):
             transformed node features, and target node indices.
         """
 
-        h = F.leaky_relu(self.w(node_features), self.scaling)
-        edge_h = F.leaky_relu(self.edgew(edge_features), self.scaling)
+        h = self.w(node_features)
+        edge_h = self.edgew(edge_features)
 
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
@@ -204,7 +204,7 @@ class GraphAttentionLayerEdge(nn.Module):
         h_j = h[neighbors_nodes]
         h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
 
-        eij = self.attn(h_concat)
+        eij = F.leaky_relu(self.attn(h_concat), negative_slope=self.scaling)
 
         attention_score = F.dropout(
             torch_scatter.scatter_softmax(
@@ -214,8 +214,9 @@ class GraphAttentionLayerEdge(nn.Module):
             ),
             p=self.dropout,
         )
+        message = attention_score * h_j
 
-        return (attention_score * h_j), h, target_nodes
+        return message, h, target_nodes
 
     def forward(
         self,
@@ -247,7 +248,7 @@ class GraphAttentionLayerEdge(nn.Module):
             dim=0,
             dim_size=node_features.size(0),
         )
-        return F.leaky_relu(out, self.scaling)
+        return F.elu(out)
 
 
 @jt(typechecker=typechecker)
@@ -311,7 +312,7 @@ class GraphAttentionLayer(nn.Module):
             Attention scores for nodes.
         """
 
-        h = F.leaky_relu(self.w(node_features), self.scaling)
+        h = self.w(node_features)
 
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
@@ -320,7 +321,7 @@ class GraphAttentionLayer(nn.Module):
         h_j = h[neighbors_nodes]
         h_concat = torch.cat([h_i, h_j], dim=-1)
 
-        eij = self.attn(h_concat)
+        eij = F.leaky_relu(self.attn(h_concat), negative_slope=self.scaling)
 
         attention_score = F.dropout(
             torch_scatter.scatter_softmax(
@@ -331,7 +332,9 @@ class GraphAttentionLayer(nn.Module):
             p=self.dropout,
         )
 
-        return (attention_score * h_j), h, target_nodes
+        message = attention_score * h_j
+
+        return message, h, target_nodes
 
     def forward(
         self,
@@ -359,4 +362,4 @@ class GraphAttentionLayer(nn.Module):
             dim=0,
             dim_size=node_features.size(0),
         )
-        return F.leaky_relu(out, self.scaling)
+        return F.elu(out)
