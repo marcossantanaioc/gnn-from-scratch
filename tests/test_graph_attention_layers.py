@@ -244,6 +244,60 @@ class TestGraphAttentionLayers:
         assert att_out[1].shape == (num_atoms, 200)
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
+    ##########
+
+    @pytest.mark.parametrize(
+        "n_node_features,n_hidden_features,num_layers,num_heads",
+        [
+            (136, 200, 17, 8),
+            (64, 512, 9, 4),
+        ],
+    )
+    def test_multihead_graph_attention_layer(
+        self,
+        n_node_features,
+        n_hidden_features,
+        num_layers,
+        num_heads,
+    ):
+        gat_layer = graph_attention_layers.MultiHeadGATLayer(
+            n_node_features=n_node_features,
+            n_hidden_features=n_hidden_features,
+            dropout=0.1,
+            num_heads=num_heads,
+        )
+        assert (
+            len(
+                [
+                    layer
+                    for layer in gat_layer.modules()
+                    if isinstance(layer, torch.nn.Linear)
+                ],
+            )
+            == num_layers
+        )
+
+    def test_multihead_graph_attention_layer_output_shape(self, smi):
+        moldataset = mpnn_dataset.MPNNDataset(
+            smiles=(smi,),
+            targets=(1.0,),
+        )
+
+        input_entry = moldataset[0]
+        num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
+
+        gat_layer = graph_attention_layers.MultiHeadGATLayer(
+            n_node_features=136,
+            n_hidden_features=200,
+            dropout=0.1,
+        )
+        out = gat_layer(
+            node_features=input_entry.node_features,
+            edge_index=input_entry.edge_indices,
+        )
+
+        assert out.shape == (num_atoms, 200)
+
 
 if __name__ == "_main_":
     pytest.main([__file__])

@@ -363,3 +363,80 @@ class GraphAttentionLayer(nn.Module):
             dim_size=node_features.size(0),
         )
         return F.elu(out)
+
+
+def _create_output_layer(
+    head_dimension: int,
+    n_hidden_features: int,
+    agg_method: str,
+) -> nn.Module:
+    if agg_method in ["max", "mean"]:
+        return nn.Linear(head_dimension, n_hidden_features)
+    return nn.Identity()
+
+
+class MultiHeadGATLayer(nn.Module):
+    """Implements a simple graph attention layer.
+
+    Attributes
+        n_node_features: number of input node features.
+        n_hidden_features: number of hidden features in intermediate layers.
+        scaling: scaling constant for LeakyRelu
+    """
+
+    def __init__(
+        self,
+        n_node_features: int,
+        n_hidden_features: int,
+        dropout: float,
+        scaling: float = 0.2,
+        num_heads: int = 8,
+        agg_method: str = "mean",
+    ):
+        super().__init__()
+
+        if agg_method not in ["mean", "concat", "max"]:
+            raise ValueError("Only mean, max and concat are available.")
+
+        self.num_heads = num_heads
+        self.agg_method = agg_method
+        self.head_dimension = n_hidden_features // num_heads
+
+        self.scaling = scaling
+        self.n_hidden_features = n_hidden_features
+
+        attention_heads = [
+            GraphAttentionLayerSkip(
+                n_node_features=n_node_features,
+                n_hidden_features=self.head_dimension,
+                dropout=dropout,
+            ),
+        ]
+        for i in range(1, self.num_heads):
+            attention_heads.append(
+                GraphAttentionLayerSkip(
+                    n_node_features=n_node_features,
+                    n_hidden_features=self.head_dimension,
+                    dropout=dropout,
+                ),
+            )
+        self.multiheadgat = nn.ModuleList(attention_heads)
+
+        self.out_layer = _create_output_layer(
+            head_dimension=self.head_dimension,
+            n_hidden_features=self.n_hidden_features,
+            agg_method=agg_method,
+        )
+
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> Float[torch.Tensor, "nodes node_features"]:
+        head_outs = [
+            attn_head(node_features, edge_index)
+            for attn_head in self.multiheadgat
+        ]
+        if self.agg_method == "concat":
+            return F.elu(self.out_layer(torch.cat(head_outs, dim=-1)))
+        return F.elu(self.out_layer(torch.mean(torch.stack(head_outs), dim=0)))
