@@ -1,5 +1,7 @@
 """Layers implemeting graph attention."""
 
+from collections.abc import Iterable
+
 import torch
 import torch.nn.functional as F  # noqa: N812
 import torch_scatter
@@ -7,8 +9,6 @@ from jaxtyping import Float, Int
 from jaxtyping import jaxtyped as jt
 from torch import nn
 from typeguard import typechecked as typechecker
-
-from graphmodels.layers import constants as layer_constants
 
 
 @jt(typechecker=typechecker)
@@ -21,7 +21,9 @@ class GraphAttentionLayerSkip(nn.Module):
     Attributes
         n_node_features: number of input node features.
         n_hidden_features: number of hidden features in intermediate layers.
-        scaling: scaling constant for LeakyRelu
+        scaling: scaling constant for LeakyRelu.
+        dropout: amount of dropout to apply.
+        apply_act: whether to apply non-linearity to outputs.
     """
 
     def __init__(
@@ -30,9 +32,11 @@ class GraphAttentionLayerSkip(nn.Module):
         n_hidden_features: int,
         scaling: float = 0.2,
         dropout: float = 0.25,
+        apply_act: bool = True,
     ):
         super().__init__()
         self.scaling = scaling
+        self.apply_act = apply_act
         self.dropout = nn.Dropout(p=dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 2, 1)
@@ -127,7 +131,10 @@ class GraphAttentionLayerSkip(nn.Module):
             dim_size=transformed_node_features.size(0),
         )
         out = out + transformed_node_features
-        return self.norm(F.elu(out))
+        if self.apply_act:
+            out = F.elu(out)
+
+        return out
 
 
 @jt(typechecker=typechecker)
@@ -375,7 +382,7 @@ def _create_output_layer(
 
 
 class MultiHeadGATLayer(nn.Module):
-    """Implements a simple graph attention layer.
+    """Implements a multihead graph attention layer.
 
     Attributes
         n_node_features: number of input node features.
@@ -390,56 +397,40 @@ class MultiHeadGATLayer(nn.Module):
         dropout: float,
         scaling: float = 0.2,
         num_heads: int = 8,
-        agg_method: str = "mean",
+        apply_act: bool = True,
     ):
         super().__init__()
 
-        if agg_method not in [
-            layer_constants.PoolingMethod.MEAN,
-            layer_constants.PoolingMethod.CONCAT,
-            layer_constants.PoolingMethod.MAX,
-        ]:
-            raise ValueError("Only mean, max and concat are available.")
-
-        self.num_heads = num_heads
-        self.agg_method = agg_method
-        self.head_dimension = n_hidden_features // num_heads
-
-        self.scaling = scaling
+        self.n_node_features = n_node_features
         self.n_hidden_features = n_hidden_features
+        self.head_dimension = n_hidden_features // num_heads
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.scaling = scaling
+        self.apply_act = apply_act
+        self.multiheadgat = self._get_attention_heads()
 
-        attention_heads = [
-            GraphAttentionLayerSkip(
-                n_node_features=n_node_features,
-                n_hidden_features=self.head_dimension,
-                dropout=dropout,
-            ),
-        ]
-        for i in range(1, self.num_heads):
+    def _get_attention_heads(self) -> Iterable[nn.Module]:
+        attention_heads = []
+        for _ in range(self.num_heads):
             attention_heads.append(
                 GraphAttentionLayerSkip(
-                    n_node_features=n_node_features,
+                    n_node_features=self.n_node_features,
                     n_hidden_features=self.head_dimension,
-                    dropout=dropout,
+                    dropout=self.dropout,
+                    scaling=self.scaling,
+                    apply_act=self.apply_act,
                 ),
             )
-        self.multiheadgat = nn.ModuleList(attention_heads)
-
-        self.out_layer = _create_output_layer(
-            head_dimension=self.head_dimension,
-            n_hidden_features=self.n_hidden_features,
-            agg_method=agg_method,
-        )
+        return nn.ModuleList(attention_heads)
 
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
         edge_index: Float[torch.Tensor, "2 edges"],
     ) -> Float[torch.Tensor, "nodes node_features"]:
-        head_outs = [
+        heads_nodes_out = [
             attn_head(node_features, edge_index)
             for attn_head in self.multiheadgat
         ]
-        if self.agg_method == layer_constants.PoolingMethod.CONCAT:
-            return F.elu(self.out_layer(torch.cat(head_outs, dim=-1)))
-        return F.elu(self.out_layer(torch.mean(torch.stack(head_outs), dim=0)))
+        return torch.cat(heads_nodes_out, dim=-1)

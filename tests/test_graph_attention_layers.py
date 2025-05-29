@@ -245,17 +245,16 @@ class TestGraphAttentionLayers:
         torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
 
     @pytest.mark.parametrize(
-        "n_node_features,n_hidden_features,num_layers,num_heads",
+        "n_node_features,n_hidden_features,num_heads",
         [
-            (136, 200, 17, 8),
-            (64, 512, 9, 4),
+            (136, 200, 8),
+            (64, 512, 4),
         ],
     )
     def test_multihead_graph_attention_layer(
         self,
         n_node_features,
         n_hidden_features,
-        num_layers,
         num_heads,
     ):
         gat_layer = graph_attention_layers.MultiHeadGATLayer(
@@ -264,16 +263,7 @@ class TestGraphAttentionLayers:
             dropout=0.1,
             num_heads=num_heads,
         )
-        assert (
-            len(
-                [
-                    layer
-                    for layer in gat_layer.modules()
-                    if isinstance(layer, torch.nn.Linear)
-                ],
-            )
-            == num_layers
-        )
+        assert len(gat_layer.multiheadgat) == num_heads
 
     def test_multihead_graph_attention_layer_output_shape(self, smi):
         moldataset = mpnn_dataset.MPNNDataset(
@@ -288,6 +278,7 @@ class TestGraphAttentionLayers:
             n_node_features=136,
             n_hidden_features=200,
             dropout=0.1,
+            num_heads=2,
         )
         out = gat_layer(
             node_features=input_entry.node_features,
@@ -295,15 +286,6 @@ class TestGraphAttentionLayers:
         )
 
         assert out.shape == (num_atoms, 200)
-
-    def test_multihead_graph_attention_layer_bad_pooling(self):
-        with pytest.raises(ValueError):
-            graph_attention_layers.MultiHeadGATLayer(
-                n_node_features=136,
-                n_hidden_features=200,
-                dropout=0.1,
-                agg_method="ERROR",
-            )
 
 
 if __name__ == "_main_":
