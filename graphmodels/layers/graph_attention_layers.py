@@ -21,9 +21,7 @@ class GraphAttentionLayerSkip(nn.Module):
     Attributes
         n_node_features: number of input node features.
         n_hidden_features: number of hidden features in intermediate layers.
-        scaling: scaling constant for LeakyRelu.
-        dropout: amount of dropout to apply.
-        apply_act: whether to apply non-linearity to outputs.
+        scaling: scaling constant for LeakyRelu
     """
 
     def __init__(
@@ -32,7 +30,7 @@ class GraphAttentionLayerSkip(nn.Module):
         n_hidden_features: int,
         scaling: float = 0.2,
         dropout: float = 0.25,
-        apply_act: bool = True,
+        apply_act: bool = False,
     ):
         super().__init__()
         self.scaling = scaling
@@ -40,7 +38,6 @@ class GraphAttentionLayerSkip(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 2, 1)
-        self.norm = nn.LayerNorm(n_hidden_features)
 
     def compute_attention(
         self,
@@ -133,8 +130,7 @@ class GraphAttentionLayerSkip(nn.Module):
         out = out + transformed_node_features
         if self.apply_act:
             out = F.elu(out)
-
-        return out
+        return self.dropout(out)
 
 
 @jt(typechecker=typechecker)
@@ -371,16 +367,6 @@ class GraphAttentionLayer(nn.Module):
         return F.elu(out)
 
 
-def _create_output_layer(
-    head_dimension: int,
-    n_hidden_features: int,
-    agg_method: str,
-) -> nn.Module:
-    if agg_method in ["max", "mean"]:
-        return nn.Linear(head_dimension, n_hidden_features)
-    return nn.Identity()
-
-
 class MultiHeadGATLayer(nn.Module):
     """Implements a multihead graph attention layer.
 
@@ -412,7 +398,7 @@ class MultiHeadGATLayer(nn.Module):
 
     def _get_attention_heads(self) -> Iterable[nn.Module]:
         attention_heads = []
-        for _ in range(self.num_heads):
+        for i in range(self.num_heads):
             attention_heads.append(
                 GraphAttentionLayerSkip(
                     n_node_features=self.n_node_features,
@@ -420,7 +406,7 @@ class MultiHeadGATLayer(nn.Module):
                     dropout=self.dropout,
                     scaling=self.scaling,
                     apply_act=self.apply_act,
-                ),
+                )
             )
         return nn.ModuleList(attention_heads)
 

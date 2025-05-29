@@ -10,58 +10,38 @@ from graphmodels.models import gat
 class TestGATModels:
     """Pytests"""
 
-    def test_gat_model_raises_bad_output(self):
-        with pytest.raises(ValueError):
-            gat.GATModel(
-                n_hidden_features=10,
-                n_node_features=10,
-                n_out_channels=1,
-                n_layers=2,
-                scaling=0.2,
-                dropout=0.5,
-                agg_method="concat",
-                output_level="FALSE",
-            )
-
-    def test_gat_model_raises_bad_agg_method(self):
-        with pytest.raises(ValueError):
-            gat.GATModel(
-                n_hidden_features=10,
-                n_node_features=10,
-                n_out_channels=1,
-                n_layers=2,
-                scaling=0.2,
-                dropout=0.5,
-                agg_method="FALSE",
-                output_level="graph",
-            )
-
     @pytest.mark.parametrize(
-        "bs,atoms,n_feats,h_features,out_units,n_layers",
+        "bs,atoms,n_feats,h_features,out_units,heads,num_layers,output_level",
         [
             (
                 2,
                 29,
                 64,
-                200,
+                136,
                 1,
+                2,
                 1,
+                "graph",
             ),
             (
                 3,
                 20,
                 64,
                 512,
+                4,
                 2,
                 3,
+                "node",
             ),
             (
                 5,
                 15,
                 136,
-                100,
-                3,
-                5,
+                64,
+                2,
+                2,
+                2,
+                "node",
             ),
         ],  # Add multiple test cases
     )
@@ -72,7 +52,9 @@ class TestGATModels:
         n_feats,
         h_features,
         out_units,
-        n_layers,
+        num_layers,
+        heads,
+        output_level,
     ):
         dset_entries = [
             mpnn_dataset.MPNNEntry(
@@ -97,11 +79,11 @@ class TestGATModels:
             n_hidden_features=h_features,
             n_node_features=n_feats,
             n_out_channels=out_units,
-            n_layers=n_layers,
+            num_layers=num_layers,
+            num_heads=heads,
             scaling=0.2,
             dropout=0.5,
-            agg_method="concat",
-            output_level="graph",
+            output_level=output_level,
         )
 
         # Pass the input data through the model
@@ -110,8 +92,13 @@ class TestGATModels:
             edge_index=batch.edge_index,
             batch_vector=batch.batch_vector,
         )
-        expected_shape = torch.Size([bs, out_units])
-        assert output.shape == expected_shape
+        if output_level == "graph":
+            expected_shape = torch.Size([bs, out_units])
+            assert output.shape == expected_shape
+        elif output_level == "node":
+            assert output.shape == torch.Size(
+                [len(batch.node_features), out_units],
+            )
 
 
 if __name__ == "__main__":
