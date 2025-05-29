@@ -1,4 +1,5 @@
 import torch
+import torch_scatter
 from jaxtyping import Float, Int
 from jaxtyping import jaxtyped as jt
 from torch import nn
@@ -71,27 +72,14 @@ class GATModel(nn.Module):
     def readout(
         self,
         x: Float[torch.Tensor, "nodes features"],
-        edge_index: Int[torch.Tensor, "2 edges"],
         batch_vector: Int[torch.Tensor, " batch"],
     ) -> Float[torch.Tensor, "out n_out_channels"]:
-        emb_dim = x.size(-1)
-        num_batches = int(batch_vector.max()) + 1
-
         if self.output_level == model_constants.OutputLevel.GRAPH:
-            mol_embeddings = torch.zeros(
-                num_batches,
-                emb_dim,
-                device=x.device,
+            return torch_scatter.scatter_mean(
+                src=x,
+                index=batch_vector,
+                dim=0,
             )
-
-            mol_embeddings.index_add_(0, batch_vector, x)
-            count = (
-                torch.bincount(batch_vector, minlength=num_batches)
-                .clamp(min=1)
-                .unsqueeze(-1)
-            )
-
-            return mol_embeddings / count
 
         return x
 
@@ -108,4 +96,4 @@ class GATModel(nn.Module):
             )
 
         out = self.output_layer(node_features, edge_index)
-        return self.readout(out, edge_index, batch_vector)
+        return self.readout(out, batch_vector)
