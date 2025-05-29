@@ -33,7 +33,7 @@ class GraphAttentionLayerSkip(nn.Module):
     ):
         super().__init__()
         self.scaling = scaling
-        self.dropout = dropout
+        self.dropout = nn.Dropout(p=dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 2, 1)
         self.norm = nn.LayerNorm(n_hidden_features)
@@ -75,7 +75,7 @@ class GraphAttentionLayerSkip(nn.Module):
         Returns:
             Attention scores for nodes.
         """
-
+        node_features = self.dropout(node_features)
         h = self.w(node_features)
 
         neighbors_nodes = edge_index[1]
@@ -88,13 +88,12 @@ class GraphAttentionLayerSkip(nn.Module):
 
         eij = F.leaky_relu(self.attn(h_concat), negative_slope=self.scaling)
 
-        attention_score = F.dropout(
+        attention_score = self.dropout(
             torch_scatter.scatter_softmax(
                 src=eij,
                 index=target_nodes,
                 dim=0,
             ),
-            p=self.dropout,
         )
         message = attention_score * h_j
 
@@ -151,7 +150,7 @@ class GraphAttentionLayerEdge(nn.Module):
     ):
         super().__init__()
         self.scaling = scaling
-        self.dropout = dropout
+        self.dropout = nn.Dropout(dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.edgew = nn.Linear(n_edge_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 3, 1)
@@ -195,7 +194,7 @@ class GraphAttentionLayerEdge(nn.Module):
             Attention scores multiplied by transformed neighbor features,
             transformed node features, and target node indices.
         """
-
+        node_features = self.dropout(node_features)
         h = self.w(node_features)
         edge_h = self.edgew(edge_features)
 
@@ -214,7 +213,6 @@ class GraphAttentionLayerEdge(nn.Module):
                 index=target_nodes,
                 dim=0,
             ),
-            p=self.dropout,
         )
         message = attention_score * h_j
 
@@ -272,7 +270,7 @@ class GraphAttentionLayer(nn.Module):
     ):
         super().__init__()
         self.scaling = scaling
-        self.dropout = dropout
+        self.dropout = nn.Dropout(dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.attn = nn.Linear(n_hidden_features * 2, 1)
 
@@ -313,7 +311,7 @@ class GraphAttentionLayer(nn.Module):
         Returns:
             Attention scores for nodes.
         """
-
+        node_features = self.dropout(node_features)
         h = self.w(node_features)
 
         neighbors_nodes = edge_index[1]
@@ -325,13 +323,12 @@ class GraphAttentionLayer(nn.Module):
 
         eij = F.leaky_relu(self.attn(h_concat), negative_slope=self.scaling)
 
-        attention_score = F.dropout(
+        attention_score = self.dropout(
             torch_scatter.scatter_softmax(
                 src=eij,
                 index=target_nodes,
                 dim=0,
             ),
-            p=self.dropout,
         )
 
         message = attention_score * h_j
