@@ -150,9 +150,11 @@ class GraphAttentionLayerEdge(nn.Module):
         n_hidden_features: int,
         scaling: float = 0.2,
         dropout: float = 0.25,
+        apply_act: bool = False,
     ):
         super().__init__()
         self.scaling = scaling
+        self.apply_act = apply_act
         self.dropout = nn.Dropout(dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.edgew = nn.Linear(n_edge_features, n_hidden_features)
@@ -197,6 +199,8 @@ class GraphAttentionLayerEdge(nn.Module):
             Attention scores multiplied by transformed neighbor features,
             transformed node features, and target node indices.
         """
+
+        edge_features = self.dropout(edge_features)
         node_features = self.dropout(node_features)
         h = self.w(node_features)
         edge_h = self.edgew(edge_features)
@@ -239,10 +243,12 @@ class GraphAttentionLayerEdge(nn.Module):
             The update includes edge features.
 
         """
-        message, node_features, target_nodes = self.compute_attention(
-            node_features=node_features,
-            edge_features=edge_features,
-            edge_index=edge_index,
+        message, transformed_node_features, target_nodes = (
+            self.compute_attention(
+                node_features=node_features,
+                edge_features=edge_features,
+                edge_index=edge_index,
+            )
         )
 
         out = torch_scatter.scatter_add(
@@ -251,7 +257,10 @@ class GraphAttentionLayerEdge(nn.Module):
             dim=0,
             dim_size=node_features.size(0),
         )
-        return F.elu(out)
+        out = out + transformed_node_features
+        if self.apply_act:
+            out = F.elu(out)
+        return self.dropout(out)
 
 
 @jt(typechecker=typechecker)
@@ -406,7 +415,7 @@ class MultiHeadGATLayer(nn.Module):
                     dropout=self.dropout,
                     scaling=self.scaling,
                     apply_act=self.apply_act,
-                )
+                ),
             )
         return nn.ModuleList(attention_heads)
 
