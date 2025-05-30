@@ -101,7 +101,7 @@ class GraphAttentionLayerSkip(nn.Module):
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> Float[torch.Tensor, "nodes node_features"]:
         """Performs the forward pass.
 
@@ -162,7 +162,7 @@ class GraphAttentionLayerEdge(nn.Module):
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
         edge_features: Float[torch.Tensor, "edges edge_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> tuple[
         Float[torch.Tensor, "attention_score 1"],  # noqa: F722
         Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
@@ -228,7 +228,7 @@ class GraphAttentionLayerEdge(nn.Module):
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
         edge_features: Float[torch.Tensor, "edges edge_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> tuple[
         Float[torch.Tensor, "nodes node_features"],
         Float[torch.Tensor, "edges edge_features"],
@@ -292,7 +292,7 @@ class GraphAttentionLayer(nn.Module):
     def compute_attention(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> tuple[
         Float[torch.Tensor, "attention_score 1"],  # noqa: F722
         Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
@@ -353,7 +353,7 @@ class GraphAttentionLayer(nn.Module):
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> Float[torch.Tensor, "nodes node_features"]:
         """Performs the forward pass.
 
@@ -426,7 +426,7 @@ class MultiHeadGATLayer(nn.Module):
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> Float[torch.Tensor, "nodes node_features"]:
         heads_nodes_out = [
             attn_head(node_features, edge_index)
@@ -486,7 +486,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
         edge_features: Float[torch.Tensor, "edges edge_features"],
-        edge_index: Float[torch.Tensor, "2 edges"],
+        edge_index: Int[torch.Tensor, "2 edges"],
     ) -> tuple[
         Float[torch.Tensor, "nodes node_features"],
         Float[torch.Tensor, "edges edge_features"],
