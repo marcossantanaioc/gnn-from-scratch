@@ -168,6 +168,7 @@ class GraphAttentionLayerEdge(nn.Module):
     ) -> tuple[
         Float[torch.Tensor, "attention_score 1"],  # noqa: F722
         Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
+        Float[torch.Tensor, "edges hidden_features"],  # noqa: F722
         Int[torch.Tensor, " target_index"],
     ]:
         """Computes attention score between nodes i and j.
@@ -223,14 +224,17 @@ class GraphAttentionLayerEdge(nn.Module):
         )
         message = attention_score * h_j
 
-        return message, h, target_nodes
+        return message, h, edge_h, target_nodes
 
     def forward(
         self,
         node_features: Float[torch.Tensor, "nodes node_features"],
         edge_features: Float[torch.Tensor, "edges edge_features"],
         edge_index: Float[torch.Tensor, "2 edges"],
-    ) -> Float[torch.Tensor, "nodes node_features"]:
+    ) -> tuple[
+        Float[torch.Tensor, "nodes node_features"],
+        Float[torch.Tensor, "edges edge_features"],
+    ]:
         """Performs the forward pass.
 
         Args:
@@ -243,7 +247,7 @@ class GraphAttentionLayerEdge(nn.Module):
             The update includes edge features.
 
         """
-        message, transformed_node_features, target_nodes = (
+        message, transformed_node_features, edge_h, target_nodes = (
             self.compute_attention(
                 node_features=node_features,
                 edge_features=edge_features,
@@ -260,7 +264,8 @@ class GraphAttentionLayerEdge(nn.Module):
         out = out + transformed_node_features
         if self.apply_act:
             out = F.elu(out)
-        return self.dropout(out)
+            edge_h = F.elu(edge_h)
+        return self.dropout(out), self.dropout(edge_h)
 
 
 @jt(typechecker=typechecker)
@@ -376,6 +381,7 @@ class GraphAttentionLayer(nn.Module):
         return F.elu(out)
 
 
+@jt(typechecker=typechecker)
 class MultiHeadGATLayer(nn.Module):
     """Implements a multihead graph attention layer.
 
@@ -429,3 +435,77 @@ class MultiHeadGATLayer(nn.Module):
             for attn_head in self.multiheadgat
         ]
         return torch.cat(heads_nodes_out, dim=-1)
+
+
+@jt(typechecker=typechecker)
+class MultiHeadEdgeGATLayer(nn.Module):
+    """Implements a multihead graph attention layer.
+
+    Attributes
+        n_node_features: number of input node features.
+        n_hidden_features: number of hidden features in intermediate layers.
+        scaling: scaling constant for LeakyRelu
+    """
+
+    def __init__(
+        self,
+        n_node_features: int,
+        n_edge_features: int,
+        n_hidden_features: int,
+        dropout: float,
+        scaling: float = 0.2,
+        num_heads: int = 8,
+        apply_act: bool = True,
+    ):
+        super().__init__()
+
+        self.n_node_features = n_node_features
+        self.n_edge_features = n_edge_features
+        self.n_hidden_features = n_hidden_features
+        self.head_dimension = n_hidden_features // num_heads
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.scaling = scaling
+        self.apply_act = apply_act
+        self.multiheadgat = self._get_attention_heads()
+
+    def _get_attention_heads(self) -> nn.ModuleList:
+        attention_heads = []
+        for i in range(self.num_heads):
+            attention_heads.append(
+                GraphAttentionLayerEdge(
+                    n_node_features=self.n_node_features,
+                    n_edge_features=self.n_edge_features,
+                    n_hidden_features=self.head_dimension,
+                    dropout=self.dropout,
+                    scaling=self.scaling,
+                    apply_act=self.apply_act,
+                ),
+            )
+        return nn.ModuleList(attention_heads)
+
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Float[torch.Tensor, "2 edges"],
+    ) -> tuple[
+        Float[torch.Tensor, "nodes node_features"],
+        Float[torch.Tensor, "edges edge_features"],
+    ]:
+        heads_nodes_out = []
+        heads_edges_out = []
+
+        for attn_head in self.multiheadgat:
+            n_out, e_out = attn_head(
+                node_features=node_features,
+                edge_features=edge_features,
+                edge_index=edge_index,
+            )
+            heads_edges_out.append(e_out)
+            heads_nodes_out.append(n_out)
+
+        return torch.cat(heads_nodes_out, dim=-1), torch.cat(
+            heads_edges_out,
+            dim=-1,
+        )
