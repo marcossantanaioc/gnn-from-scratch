@@ -1,6 +1,4 @@
-"""Layers implemeting graph attention."""
-
-from collections.abc import Iterable
+"""Graph attention layers"""
 
 import torch
 import torch.nn.functional as F  # noqa: N812
@@ -411,7 +409,7 @@ class MultiHeadGATLayer(nn.Module):
         self.apply_act = apply_act
         self.multiheadgat = self._get_attention_heads()
 
-    def _get_attention_heads(self) -> Iterable[nn.Module]:
+    def _get_attention_heads(self) -> nn.ModuleList:
         attention_heads = []
         for i in range(self.num_heads):
             attention_heads.append(
