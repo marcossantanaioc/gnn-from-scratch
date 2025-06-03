@@ -6,7 +6,7 @@ from torch import nn
 from typeguard import typechecked as typechecker
 
 from graphmodels.layers import graph_attention_layers
-from graphmodels.layers.graph_attention_layers import MultiHeadGATLayer
+
 from graphmodels.models import constants as model_constants
 
 
@@ -25,9 +25,9 @@ class GATModel(nn.Module):
         n_out_channels: int,
         num_layers: int,
         num_heads: int,
-        scaling: float,
-        dropout: float,
         output_level: model_constants.OutputLevel | str,
+        scaling: float = 0.2,
+        dropout: float = 0.0,
     ):
         super().__init__()
 
@@ -37,7 +37,7 @@ class GATModel(nn.Module):
         self.output_level = output_level
 
         gat_layers = [
-            MultiHeadGATLayer(
+            graph_attention_layers.MultiHeadGATLayer(
                 n_node_features=n_node_features,
                 n_hidden_features=n_hidden_features,
                 num_heads=num_heads,
@@ -50,7 +50,7 @@ class GATModel(nn.Module):
 
         for i in range(num_layers - 1):
             gat_layers.append(
-                MultiHeadGATLayer(
+                graph_attention_layers.MultiHeadGATLayer(
                     n_node_features=n_hidden_features * num_heads,
                     n_hidden_features=n_hidden_features,
                     num_heads=num_heads,
@@ -63,7 +63,7 @@ class GATModel(nn.Module):
 
         self.conv_layers = nn.ModuleList(gat_layers)
 
-        self.output_layer = MultiHeadGATLayer(
+        self.output_layer = graph_attention_layers.MultiHeadGATLayer(
             n_node_features=n_hidden_features * num_heads,
             n_hidden_features=n_out_channels,
             num_heads=1,

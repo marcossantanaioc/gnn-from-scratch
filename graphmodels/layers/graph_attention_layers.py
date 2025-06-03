@@ -29,14 +29,13 @@ class GraphAttentionLayerSkip(nn.Module):
         scaling: float = 0.2,
         dropout: float = 0.25,
         apply_act: bool = False,
-        bias: bool = True,
     ):
         super().__init__()
         self.scaling = scaling
         self.apply_act = apply_act
         self.dropout = nn.Dropout(p=dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
-        self.attn = nn.Linear(n_hidden_features * 2, 1, bias=bias)
+        self.attn = nn.Linear(n_hidden_features * 2, 1, bias=False)
 
     def compute_attention(
         self,
@@ -150,7 +149,6 @@ class GraphAttentionLayerEdge(nn.Module):
         scaling: float = 0.2,
         dropout: float = 0.25,
         apply_act: bool = False,
-        bias: bool = False,
     ):
         super().__init__()
         self.scaling = scaling
@@ -158,7 +156,7 @@ class GraphAttentionLayerEdge(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
         self.edgew = nn.Linear(n_edge_features, n_hidden_features)
-        self.attn = nn.Linear(n_hidden_features * 3, 1, bias=bias)
+        self.attn = nn.Linear(n_hidden_features * 3, 1, bias=False)
 
     def compute_attention(
         self,
@@ -284,13 +282,12 @@ class GraphAttentionLayer(nn.Module):
         n_hidden_features: int,
         scaling: float = 0.2,
         dropout: float = 0.25,
-        bias: bool = False,
     ):
         super().__init__()
         self.scaling = scaling
         self.dropout = nn.Dropout(dropout)
         self.w = nn.Linear(n_node_features, n_hidden_features)
-        self.attn = nn.Linear(n_hidden_features * 2, 1, bias=bias)
+        self.attn = nn.Linear(n_hidden_features * 2, 1, bias=False)
 
     def compute_attention(
         self,
