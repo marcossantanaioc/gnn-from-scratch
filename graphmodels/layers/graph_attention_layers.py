@@ -50,7 +50,7 @@ class GraphAttentionLayerSkip(nn.Module):
 
         The attention mechanism is defined as:
 
-            α_ij = softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
+            α_ij=softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
 
         where:
         - h_i, h_j are the input features of nodes i and j,
@@ -61,12 +61,12 @@ class GraphAttentionLayerSkip(nn.Module):
 
         The updated feature for node i is computed as:
 
-            h_i' = σ( Σ_{j ∈ N(i)} α_ij · W h_j )
+            h_i'=σ( Σ_{j ∈ N(i)} α_ij · W h_j )
 
         where σ is a non-linear activation function.
 
         Args:
-            node_features: input node features (shape = N, F)
+            node_features: input node features (shape=N, F)
             where N is the number of nodes and F the number of features.
             edge_index: graph connectivity in COO format with shape (2, E),
                 where E is the number of edges. The first row contains target
@@ -173,7 +173,7 @@ class GraphAttentionLayerEdge(nn.Module):
 
         The attention mechanism is defined as:
 
-            α_ij = softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
+            α_ij=softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
 
         where:
         - h_i, h_j are the input features of nodes i and j,
@@ -184,7 +184,7 @@ class GraphAttentionLayerEdge(nn.Module):
 
         The updated feature for node i is computed as:
 
-            h_i' = σ( Σ_{j ∈ N(i)} α_ij · W h_j )
+            h_i'=σ( Σ_{j ∈ N(i)} α_ij · W h_j )
 
         where σ is a non-linear activation function.
 
@@ -302,7 +302,7 @@ class GraphAttentionLayer(nn.Module):
 
         The attention mechanism is defined as:
 
-            α_ij = softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
+            α_ij=softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
 
         where:
         - h_i, h_j are the input features of nodes i and j,
@@ -313,12 +313,12 @@ class GraphAttentionLayer(nn.Module):
 
         The updated feature for node i is computed as:
 
-            h_i' = σ( Σ_{j ∈ N(i)} α_ij · W h_j )
+            h_i'=σ( Σ_{j ∈ N(i)} α_ij · W h_j )
 
         where σ is a non-linear activation function.
 
         Args:
-            node_features: input node features (shape = N, F)
+            node_features: input node features (shape=N, F)
             where N is the number of nodes and F the number of features.
             edge_index: graph connectivity in COO format with shape (2, E),
                 where E is the number of edges. The first row contains target
@@ -393,29 +393,31 @@ class MultiHeadGATLayer(nn.Module):
         self,
         n_node_features: int,
         n_hidden_features: int,
-        dropout: float,
+        dropout: float = 0.0,
         scaling: float = 0.2,
         num_heads: int = 8,
         apply_act: bool = True,
+        concat: bool = True,
     ):
         super().__init__()
 
         self.n_node_features = n_node_features
         self.n_hidden_features = n_hidden_features
-        self.head_dimension = n_hidden_features // num_heads
         self.num_heads = num_heads
         self.dropout = dropout
         self.scaling = scaling
         self.apply_act = apply_act
+        self.concat = concat
         self.multiheadgat = self._get_attention_heads()
 
     def _get_attention_heads(self) -> nn.ModuleList:
+        """Creates a stack of attention heads."""
         attention_heads = []
         for i in range(self.num_heads):
             attention_heads.append(
                 GraphAttentionLayerSkip(
                     n_node_features=self.n_node_features,
-                    n_hidden_features=self.head_dimension,
+                    n_hidden_features=self.n_hidden_features,
                     dropout=self.dropout,
                     scaling=self.scaling,
                     apply_act=self.apply_act,
@@ -432,7 +434,9 @@ class MultiHeadGATLayer(nn.Module):
             attn_head(node_features, edge_index)
             for attn_head in self.multiheadgat
         ]
-        return torch.cat(heads_nodes_out, dim=-1)
+        if self.concat:
+            return torch.cat(heads_nodes_out, dim=-1)
+        return torch.mean(torch.stack(heads_nodes_out), dim=0)
 
 
 @jt(typechecker=typechecker)

@@ -263,6 +263,7 @@ class TestGraphAttentionLayers:
             n_hidden_features=n_hidden_features,
             dropout=0.1,
             num_heads=num_heads,
+            concat=True,
         )
         assert len(gat_layer.multiheadgat) == num_heads
 
@@ -280,13 +281,14 @@ class TestGraphAttentionLayers:
             n_hidden_features=200,
             dropout=0.1,
             num_heads=2,
+            concat=True,
         )
         out = gat_layer(
             node_features=input_entry.node_features,
             edge_index=input_entry.edge_indices,
         )
 
-        assert out.shape == (num_atoms, 200)
+        assert out.shape == (num_atoms, 400)
 
     @pytest.mark.parametrize(
         "n_node_features,n_edge_features,n_hidden_features,num_heads",

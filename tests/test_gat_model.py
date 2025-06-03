@@ -27,7 +27,7 @@ class TestGATModels:
                 3,
                 20,
                 64,
-                512,
+                200,
                 4,
                 2,
                 3,
