@@ -340,6 +340,74 @@ class TestGraphAttentionLayers:
         assert out_n.shape == (num_atoms, 200)
         assert out_e.shape == (num_bonds * 2, 200)
 
+    #########
+
+    @pytest.mark.parametrize(
+        "n_node_features,n_hidden_features,num_heads",
+        [
+            (136, 200, 8),
+            (64, 512, 4),
+        ],
+    )
+    def test_multihead_graph_attention_layer_v2(
+        self,
+        n_node_features,
+        n_hidden_features,
+        num_heads,
+    ):
+        gat_layer = graph_attention_layers.MultiHeadGATLayerV2(
+            n_node_features=n_node_features,
+            n_hidden_features=n_hidden_features,
+            num_heads=num_heads,
+        )
+        assert gat_layer.attn.shape == torch.Size(
+            [1, num_heads, 2 * n_hidden_features],
+        )
+        assert gat_layer.w.weight.shape == torch.Size(
+            [n_hidden_features * num_heads, n_node_features],
+        )
+
+    @pytest.mark.parametrize(
+        "num_heads,n_hidden_features,concat",
+        [
+            (8, 8, True),
+            (4, 8, False),
+            (1, 8, True),
+            (2, 24, False),
+            (3, 17, True),
+        ],
+    )
+    def test_multihead_graph_attention_layer_v2_output_shape(
+        self,
+        smi,
+        num_heads,
+        n_hidden_features,
+        concat,
+    ):
+        moldataset = mpnn_dataset.MPNNDataset(
+            smiles=(smi,),
+            targets=(1.0,),
+        )
+
+        input_entry = moldataset[0]
+        num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
+
+        gat_layer = graph_attention_layers.MultiHeadGATLayerV2(
+            n_node_features=136,
+            n_hidden_features=n_hidden_features,
+            num_heads=num_heads,
+            concat=concat,
+        )
+        out = gat_layer(
+            node_features=input_entry.node_features,
+            edge_index=input_entry.edge_indices,
+        )
+
+        if concat:
+            assert out.shape == (num_atoms, num_heads * n_hidden_features)
+        else:
+            assert out.shape == (num_atoms, n_hidden_features)
+
 
 if __name__ == "_main_":
     pytest.main([__file__])

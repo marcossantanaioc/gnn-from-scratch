@@ -6,7 +6,6 @@ from torch import nn
 from typeguard import typechecked as typechecker
 
 from graphmodels.layers import graph_attention_layers
-
 from graphmodels.models import constants as model_constants
 
 
