@@ -171,126 +171,6 @@ class TestGraphAttentionLayers:
         torch.testing.assert_close(target_nodes, input_entry.edge_indices[0])
 
     @pytest.mark.parametrize(
-        "n_node_features,n_hidden_features,num_layers",
-        [
-            (136, 200, 2),
-            (64, 512, 2),
-        ],
-    )
-    def test_graph_attention_layer_number_of_layers(
-        self,
-        n_node_features,
-        n_hidden_features,
-        num_layers,
-    ):
-        gat_layer = graph_attention_layers.GraphAttentionLayer(
-            n_node_features=n_node_features,
-            n_hidden_features=n_hidden_features,
-        )
-        assert (
-            len(
-                [
-                    layer
-                    for layer in gat_layer.modules()
-                    if isinstance(layer, torch.nn.Linear)
-                ],
-            )
-            == num_layers
-        )
-
-    def test_graph_attention_layer_output_shape(self, smi):
-        moldataset = mpnn_dataset.MPNNDataset(
-            smiles=(smi,),
-            targets=(1.0,),
-        )
-
-        input_entry = moldataset[0]
-        num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
-
-        gat_layer = graph_attention_layers.GraphAttentionLayer(
-            n_node_features=136,
-            n_hidden_features=200,
-        )
-        out = gat_layer(
-            node_features=input_entry.node_features,
-            edge_index=input_entry.edge_indices,
-        )
-
-        assert out.shape == (num_atoms, 200)
-
-    def test_graph_attention_layer_output(self, smi):
-        moldataset = mpnn_dataset.MPNNDataset(
-            smiles=(smi,),
-            targets=(1.0,),
-        )
-
-        input_entry = moldataset[0]
-        mol = Chem.MolFromSmiles(smi)
-        num_atoms = mol.GetNumAtoms()
-        num_bonds = mol.GetNumBonds()
-
-        gat_layer = graph_attention_layers.GraphAttentionLayer(
-            n_node_features=136,
-            n_hidden_features=200,
-            dropout=0.25,
-            scaling=0.2,
-        )
-        att_out = gat_layer.compute_attention(
-            node_features=input_entry.node_features,
-            edge_index=input_entry.edge_indices,
-        )
-
-        assert len(att_out) == 3
-        assert att_out[0].shape == (num_bonds * 2, 200)
-        assert att_out[1].shape == (num_atoms, 200)
-        torch.testing.assert_close(att_out[2], input_entry.edge_indices[0])
-
-    @pytest.mark.parametrize(
-        "n_node_features,n_hidden_features,num_heads",
-        [
-            (136, 200, 8),
-            (64, 512, 4),
-        ],
-    )
-    def test_multihead_graph_attention_layer(
-        self,
-        n_node_features,
-        n_hidden_features,
-        num_heads,
-    ):
-        gat_layer = graph_attention_layers.MultiHeadGATLayer(
-            n_node_features=n_node_features,
-            n_hidden_features=n_hidden_features,
-            dropout=0.1,
-            num_heads=num_heads,
-            concat=True,
-        )
-        assert len(gat_layer.multiheadgat) == num_heads
-
-    def test_multihead_graph_attention_layer_output_shape(self, smi):
-        moldataset = mpnn_dataset.MPNNDataset(
-            smiles=(smi,),
-            targets=(1.0,),
-        )
-
-        input_entry = moldataset[0]
-        num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
-
-        gat_layer = graph_attention_layers.MultiHeadGATLayer(
-            n_node_features=136,
-            n_hidden_features=200,
-            dropout=0.1,
-            num_heads=2,
-            concat=True,
-        )
-        out = gat_layer(
-            node_features=input_entry.node_features,
-            edge_index=input_entry.edge_indices,
-        )
-
-        assert out.shape == (num_atoms, 400)
-
-    @pytest.mark.parametrize(
         "n_node_features,n_edge_features,n_hidden_features,num_heads",
         [
             (136, 24, 200, 8),
@@ -355,7 +235,7 @@ class TestGraphAttentionLayers:
         n_hidden_features,
         num_heads,
     ):
-        gat_layer = graph_attention_layers.MultiHeadGATLayerV2(
+        gat_layer = graph_attention_layers.MultiHeadGATLayer(
             n_node_features=n_node_features,
             n_hidden_features=n_hidden_features,
             num_heads=num_heads,
@@ -392,7 +272,7 @@ class TestGraphAttentionLayers:
         input_entry = moldataset[0]
         num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
 
-        gat_layer = graph_attention_layers.MultiHeadGATLayerV2(
+        gat_layer = graph_attention_layers.MultiHeadGATLayer(
             n_node_features=136,
             n_hidden_features=n_hidden_features,
             num_heads=num_heads,
