@@ -1,9 +1,56 @@
+from typing import NamedTuple
+
 import pytest
 import torch
 from rdkit import Chem
 
 from graphmodels.datasets import mpnn_dataset
 from graphmodels.layers import graph_attention_layers
+
+
+class TestDataset(NamedTuple):
+    __test__ = False
+    dset: mpnn_dataset.MPNNEntry
+    cat_node_features: torch.Tensor
+    cat_edge_features: torch.Tensor
+    num_atoms: int
+    num_bonds: int
+
+
+def get_embedding_input(
+    smi: str,
+):
+    mol = Chem.MolFromSmiles(smi)
+    num_atoms = mol.GetNumAtoms()
+    num_bonds = mol.GetNumBonds() * 2
+    moldataset = mpnn_dataset.MPNNDataset(
+        smiles=(smi,),
+        targets=(1.0,),
+    )
+
+    input_entry = moldataset[0]
+
+    edge_features = torch.zeros(num_bonds)
+    bond_idx = 0
+    for atom in mol.GetAtoms():
+        bonds = atom.GetBonds()
+        for bond in bonds:
+            edge_features[bond_idx] = int(bond.GetBondTypeAsDouble())
+            bond_idx += 1
+
+    input_entry = moldataset[0]
+    node_features = torch.tensor(
+        [atom.GetAtomicNum() for atom in mol.GetAtoms()],
+    ).to(torch.int32)
+    edge_features = edge_features.to(torch.int32)
+
+    return TestDataset(
+        dset=input_entry,
+        cat_node_features=node_features,
+        cat_edge_features=edge_features,
+        num_atoms=num_atoms,
+        num_bonds=num_bonds,
+    )
 
 
 class TestGraphAttentionLayers:
@@ -220,8 +267,6 @@ class TestGraphAttentionLayers:
         assert out_n.shape == (num_atoms, 200)
         assert out_e.shape == (num_bonds * 2, 200)
 
-    #########
-
     @pytest.mark.parametrize(
         "n_node_features,n_hidden_features,num_heads",
         [
@@ -287,6 +332,78 @@ class TestGraphAttentionLayers:
             assert out.shape == (num_atoms, num_heads * n_hidden_features)
         else:
             assert out.shape == (num_atoms, n_hidden_features)
+
+    @pytest.mark.parametrize(
+        "n_node_dict,n_edge_dict,embedding_dim,n_hidden_features,num_heads",
+        [
+            (65, 5, 64, 8, 8),
+            (20, 6, 24, 4, 2),
+        ],
+    )
+    def test_embedding_gat_layer(
+        self,
+        n_node_dict,
+        n_edge_dict,
+        embedding_dim,
+        n_hidden_features,
+        num_heads,
+    ):
+        gat_layer = graph_attention_layers.EmbeddingGATEdge(
+            n_node_dict=n_node_dict,
+            n_edge_dict=n_edge_dict,
+            embedding_dim=embedding_dim,
+            n_hidden_features=n_hidden_features,
+            num_heads=num_heads,
+        )
+        assert gat_layer.attn.shape == torch.Size(
+            [1, num_heads, 3 * n_hidden_features],
+        )
+        assert gat_layer.w.weight.shape == torch.Size(
+            [n_hidden_features * num_heads, embedding_dim],
+        )
+
+    @pytest.mark.parametrize(
+        "embedding_dim,n_hidden_features,num_heads,concat",
+        [
+            (8, 8, 8, True),
+            (16, 4, 8, False),
+            (32, 1, 8, True),
+            (64, 2, 24, False),
+            (128, 3, 17, True),
+        ],
+    )
+    def test_embedding_gat_layer_output_shape(
+        self,
+        smi,
+        embedding_dim,
+        n_hidden_features,
+        num_heads,
+        concat,
+    ):
+        test_entry = get_embedding_input(smi)
+
+        gat_layer = graph_attention_layers.EmbeddingGATEdge(
+            n_node_dict=65,
+            n_edge_dict=6,
+            embedding_dim=embedding_dim,
+            n_hidden_features=n_hidden_features,
+            num_heads=num_heads,
+            concat=concat,
+            batch_norm=True if concat else False,
+        )
+        out, _ = gat_layer(
+            node_features=test_entry.cat_node_features,
+            edge_features=test_entry.cat_edge_features,
+            edge_index=test_entry.dset.edge_indices,
+        )
+
+        if concat:
+            assert out.shape == (
+                test_entry.num_atoms,
+                num_heads * n_hidden_features,
+            )
+        else:
+            assert out.shape == (test_entry.num_atoms, n_hidden_features)
 
 
 if __name__ == "_main_":

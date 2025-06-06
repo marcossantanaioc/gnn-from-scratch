@@ -501,3 +501,194 @@ class MultiHeadEdgeGATLayer(nn.Module):
             heads_edges_out,
             dim=-1,
         )
+
+
+@jt(typechecker=typechecker)
+class EmbeddingGATEdge(nn.Module):
+    """Implements a multi-head graph attention layer with edge features.
+
+    This layer supports using discrete node and edge feature indices that
+    are first converted to embeddings before performing multi-head attention.
+    The attention mechanism incorporates both node and edge features to
+    compute attention scores and updated node features.
+
+    Attributes:
+        n_node_features: Number of input node features.
+        n_hidden_features: Number of hidden features in intermediate layers.
+        scaling: Scaling constant for the LeakyReLU activation.
+    """
+
+    def __init__(
+        self,
+        n_node_dict: int,
+        n_edge_dict: int,
+        embedding_dim: int,
+        n_hidden_features: int,
+        num_heads: int = 1,
+        scaling: float = 0.2,
+        dropout: float = 0.0,
+        apply_act: bool = False,
+        concat: bool = True,
+        add_skip_connection: bool = True,
+        batch_norm: bool = True,
+    ):
+        super().__init__()
+        self.scaling = scaling
+        self.concat = concat
+        self.apply_act = apply_act
+        self.num_heads = num_heads
+        self.n_hidden_features = n_hidden_features
+        self.dropout = nn.Dropout(p=dropout)
+        self.add_skip_connection = add_skip_connection
+
+        self.batch_norm = nn.Identity()
+
+        if batch_norm:
+            self.batch_norm = nn.LayerNorm(n_hidden_features * num_heads)
+
+        self.node_embedding = nn.Embedding(n_node_dict, embedding_dim)
+        self.edge_embedding = nn.Embedding(n_edge_dict, embedding_dim)
+
+        self.w = nn.Linear(embedding_dim, n_hidden_features * num_heads)
+        self.edgew = nn.Linear(embedding_dim, n_hidden_features * num_heads)
+        self.attn = nn.Parameter(
+            torch.Tensor(1, num_heads, 3 * n_hidden_features),
+        )
+        nn.init.xavier_uniform_(self.attn.data)
+
+    def compute_attention(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+    ) -> tuple[
+        Float[torch.Tensor, "attention_score 1"],  # noqa: F722
+        Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
+        Float[torch.Tensor, "edges hidden_features"],  # noqa: F722
+        Int[torch.Tensor, " target_index"],
+    ]:
+        """Computes attention scores between connected nodes.
+
+        The attention mechanism is defined as:
+
+            α_ij = softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j || W e_ij ] ) )
+
+        where:
+        - W is a learnable weight matrix,
+        - a is a learnable attention vector,
+        - || denotes vector concatenation,
+        - e_ij represents edge features,
+        - softmax_j is computed over all neighbors j ∈ N(i) of node i.
+
+        The updated feature for node i is then:
+
+            h_i' = σ( Σ_{j ∈ N(i)} α_ij · W h_j )
+
+        where σ is a non-linear activation function.
+
+        Args:
+            node_features: Input node features with shape (N, F),
+                where N is the number of nodes and F the number of features.
+            edge_features: Input edge features with shape (E, F),
+                where E is the number of edges.
+            edge_index: Graph connectivity in COO format with shape (2, E),
+                where the first row contains target node indices and
+                the second row contains source node indices.
+
+        Returns:
+            A tuple containing:
+                - Message after applying attention to node features.
+                - Transformed node features.
+                - Transformed edge features.
+                - Indices of target nodes.
+        """
+
+        h = self.dropout(self.w(node_features)).view(
+            -1,
+            self.num_heads,
+            self.n_hidden_features,
+        )
+
+        edge_h = self.edgew(edge_features).view(
+            -1,
+            self.num_heads,
+            self.n_hidden_features,
+        )
+
+        neighbors_nodes = edge_index[1]
+        target_nodes = edge_index[0]
+
+        h_i = h[target_nodes]
+        h_j = h[neighbors_nodes]
+
+        h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
+
+        eij = F.leaky_relu(
+            (h_concat * self.attn).sum(dim=-1),
+            negative_slope=self.scaling,
+        )
+
+        attention_score = self.dropout(
+            torch_scatter.scatter_softmax(
+                src=eij,
+                index=target_nodes,
+                dim=0,
+            ),
+        )
+
+        message = attention_score.unsqueeze(-1) * h_j
+
+        return message, h, edge_h, target_nodes
+
+    def forward(
+        self,
+        node_features: Float[torch.Tensor, "nodes node_features"],
+        edge_features: Float[torch.Tensor, "edges edge_features"],
+        edge_index: Int[torch.Tensor, "2 edges"],
+    ) -> tuple[
+        Float[torch.Tensor, "nodes node_features"],
+        Float[torch.Tensor, "edges edge_features"],
+    ]:
+        if not torch.is_floating_point(
+            node_features,
+        ) and not torch.is_floating_point(edge_features):
+            node_features = self.node_embedding(node_features)
+            edge_features = self.edge_embedding(edge_features)
+
+        (
+            message,
+            transformed_node_features,
+            transformed_edge_features,
+            target_nodes,
+        ) = self.compute_attention(
+            node_features=node_features,
+            edge_features=edge_features,
+            edge_index=edge_index,
+        )
+
+        out = torch_scatter.scatter_add(
+            message,
+            target_nodes,
+            dim=0,
+            dim_size=transformed_node_features.size(0),
+        )
+
+        if self.add_skip_connection:
+            out = out + transformed_node_features
+
+        if self.concat:
+            out = out.view(-1, self.num_heads * self.n_hidden_features)
+            transformed_edge_features = transformed_edge_features.view(
+                -1,
+                self.num_heads * self.n_hidden_features,
+            )
+
+        else:
+            out = torch.mean(out, dim=1)
+
+        out = self.batch_norm(out)
+        transformed_edge_features = self.batch_norm(transformed_edge_features)
+        if self.apply_act:
+            out = F.elu(out)
+
+        return out, transformed_edge_features
