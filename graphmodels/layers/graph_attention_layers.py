@@ -551,10 +551,7 @@ class EmbeddingGATEdge(nn.Module):
 
         self.w = nn.Linear(embedding_dim, n_hidden_features * num_heads)
         self.edgew = nn.Linear(embedding_dim, n_hidden_features * num_heads)
-        self.attn = nn.Parameter(
-            torch.Tensor(1, num_heads, 3 * n_hidden_features),
-        )
-        nn.init.xavier_uniform_(self.attn.data)
+        self.attn = nn.Linear(3 * n_hidden_features, 1)
 
     def compute_attention(
         self,
@@ -603,12 +600,6 @@ class EmbeddingGATEdge(nn.Module):
                 - Indices of target nodes.
         """
 
-        h = self.dropout(self.w(node_features)).view(
-            -1,
-            self.num_heads,
-            self.n_hidden_features,
-        )
-
         edge_h = self.edgew(edge_features).view(
             -1,
             self.num_heads,
@@ -618,13 +609,22 @@ class EmbeddingGATEdge(nn.Module):
         neighbors_nodes = edge_index[1]
         target_nodes = edge_index[0]
 
-        h_i = h[target_nodes]
-        h_j = h[neighbors_nodes]
+        h_i = self.dropout(self.w(node_features[target_nodes])).view(
+            -1,
+            self.num_heads,
+            self.n_hidden_features,
+        )
+
+        h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
+            -1,
+            self.num_heads,
+            self.n_hidden_features,
+        )
 
         h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
 
         eij = F.leaky_relu(
-            (h_concat * self.attn).sum(dim=-1),
+            self.attn(h_concat),
             negative_slope=self.scaling,
         )
 
@@ -636,9 +636,9 @@ class EmbeddingGATEdge(nn.Module):
             ),
         )
 
-        message = attention_score.unsqueeze(-1) * h_j
+        message = attention_score * h_j
 
-        return message, h, edge_h, target_nodes
+        return message, h_i, edge_h, target_nodes
 
     def forward(
         self,
@@ -666,15 +666,15 @@ class EmbeddingGATEdge(nn.Module):
             edge_index=edge_index,
         )
 
+        if self.add_skip_connection:
+            message = message + transformed_node_features
+
         out = torch_scatter.scatter_add(
             message,
             target_nodes,
             dim=0,
-            dim_size=transformed_node_features.size(0),
+            dim_size=node_features.size(0),
         )
-
-        if self.add_skip_connection:
-            out = out + transformed_node_features
 
         if self.concat:
             out = out.view(-1, self.num_heads * self.n_hidden_features)
@@ -690,5 +690,7 @@ class EmbeddingGATEdge(nn.Module):
         transformed_edge_features = self.batch_norm(transformed_edge_features)
         if self.apply_act:
             out = F.elu(out)
+
+        print(out.shape)
 
         return out, transformed_edge_features

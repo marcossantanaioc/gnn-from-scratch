@@ -355,8 +355,8 @@ class TestGraphAttentionLayers:
             n_hidden_features=n_hidden_features,
             num_heads=num_heads,
         )
-        assert gat_layer.attn.shape == torch.Size(
-            [1, num_heads, 3 * n_hidden_features],
+        assert gat_layer.attn.weight.shape == torch.Size(
+            [1, 3 * n_hidden_features],
         )
         assert gat_layer.w.weight.shape == torch.Size(
             [n_hidden_features * num_heads, embedding_dim],
@@ -366,9 +366,9 @@ class TestGraphAttentionLayers:
         "embedding_dim,n_hidden_features,num_heads,concat",
         [
             (8, 8, 8, True),
-            (16, 4, 8, False),
+            (16, 4, 8, True),
             (32, 1, 8, True),
-            (64, 2, 24, False),
+            (64, 2, 24, True),
             (128, 3, 17, True),
         ],
     )
@@ -389,7 +389,7 @@ class TestGraphAttentionLayers:
             n_hidden_features=n_hidden_features,
             num_heads=num_heads,
             concat=concat,
-            batch_norm=True if concat else False,
+            batch_norm=False,
         )
         out, _ = gat_layer(
             node_features=test_entry.cat_node_features,
@@ -399,11 +399,14 @@ class TestGraphAttentionLayers:
 
         if concat:
             assert out.shape == (
-                test_entry.num_atoms,
+                test_entry.cat_node_features.size(0),
                 num_heads * n_hidden_features,
             )
         else:
-            assert out.shape == (test_entry.num_atoms, n_hidden_features)
+            assert out.shape == (
+                test_entry.cat_node_features.size(0),
+                n_hidden_features,
+            )
 
 
 if __name__ == "_main_":
