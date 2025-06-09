@@ -132,141 +132,6 @@ class GraphAttentionLayerSkip(nn.Module):
 
 
 @jt(typechecker=typechecker)
-class GraphAttentionLayerEdge(nn.Module):
-    """Implements a graph attention layer with edge features.
-
-    Attributes
-        n_node_features: number of input node features.
-        n_hidden_features: number of hidden features in intermediate layers.
-        scaling: scaling constant for LeakyRelu
-    """
-
-    def __init__(
-        self,
-        n_node_features: int,
-        n_edge_features: int,
-        n_hidden_features: int,
-        scaling: float = 0.2,
-        dropout: float = 0.25,
-        apply_act: bool = False,
-    ):
-        super().__init__()
-        self.scaling = scaling
-        self.apply_act = apply_act
-        self.dropout = nn.Dropout(dropout)
-        self.w = nn.Linear(n_node_features, n_hidden_features)
-        self.edgew = nn.Linear(n_edge_features, n_hidden_features)
-        self.attn = nn.Linear(n_hidden_features * 3, 1, bias=False)
-
-    def compute_attention(
-        self,
-        node_features: Float[torch.Tensor, "nodes node_features"],
-        edge_features: Float[torch.Tensor, "edges edge_features"],
-        edge_index: Int[torch.Tensor, "2 edges"],
-    ) -> tuple[
-        Float[torch.Tensor, "attention_score 1"],  # noqa: F722
-        Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
-        Float[torch.Tensor, "edges hidden_features"],  # noqa: F722
-        Int[torch.Tensor, " target_index"],
-    ]:
-        """Computes attention score between nodes i and j.
-
-        The attention mechanism is defined as:
-
-            α_ij=softmax_j( LeakyReLU( aᵀ [ W h_i || W h_j ] ) )
-
-        where:
-        - h_i, h_j are the input features of nodes i and j,
-        - W is a shared learnable weight matrix,
-        - a is a learnable attention vector,
-        - || denotes vector concatenation,
-        - softmax_j is applied over all neighbors j ∈ N(i) of node i.
-
-        The updated feature for node i is computed as:
-
-            h_i'=σ( Σ_{j ∈ N(i)} α_ij · W h_j )
-
-        where σ is a non-linear activation function.
-
-        Args:
-            node_features: Input node features.
-            edge_features: Input edge features.
-            edge_index: Graph connectivity in COO format with shape $(2, E)$,
-            where $E$ is the number of edges.
-
-        Returns:
-            Attention scores multiplied by transformed neighbor features,
-            transformed node features, and target node indices.
-        """
-
-        edge_features = self.dropout(edge_features)
-        node_features = self.dropout(node_features)
-        h = self.w(node_features)
-        edge_h = self.edgew(edge_features)
-
-        neighbors_nodes = edge_index[1]
-        target_nodes = edge_index[0]
-
-        h_i = h[target_nodes]
-        h_j = h[neighbors_nodes]
-        h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
-
-        eij = F.leaky_relu(self.attn(h_concat), negative_slope=self.scaling)
-
-        attention_score = F.dropout(
-            torch_scatter.scatter_softmax(
-                src=eij,
-                index=target_nodes,
-                dim=0,
-            ),
-        )
-        message = attention_score * h_j
-
-        return message, h, edge_h, target_nodes
-
-    def forward(
-        self,
-        node_features: Float[torch.Tensor, "nodes node_features"],
-        edge_features: Float[torch.Tensor, "edges edge_features"],
-        edge_index: Int[torch.Tensor, "2 edges"],
-    ) -> tuple[
-        Float[torch.Tensor, "nodes node_features"],
-        Float[torch.Tensor, "edges edge_features"],
-    ]:
-        """Performs the forward pass.
-
-        Args:
-            node_features: input features for the nodes.
-            edge_features: input features for the edges.
-            edge_index: a matrix indicating which nodes are connected.
-            COO format (i.e. 2, N_EDGES).
-        Returns:
-            Updated node features after attention step.
-            The update includes edge features.
-
-        """
-        message, transformed_node_features, edge_h, target_nodes = (
-            self.compute_attention(
-                node_features=node_features,
-                edge_features=edge_features,
-                edge_index=edge_index,
-            )
-        )
-
-        out = torch_scatter.scatter_add(
-            message,
-            target_nodes,
-            dim=0,
-            dim_size=node_features.size(0),
-        )
-        out = out + transformed_node_features
-        if self.apply_act:
-            out = F.elu(out)
-            edge_h = F.elu(edge_h)
-        return self.dropout(out), self.dropout(edge_h)
-
-
-@jt(typechecker=typechecker)
 class MultiHeadGATLayer(nn.Module):
     """
     Implements a multihead graph attention layer with skip connections.
@@ -295,28 +160,34 @@ class MultiHeadGATLayer(nn.Module):
         self,
         n_node_features: int,
         n_hidden_features: int,
-        num_heads: int = 1,
-        scaling: float = 0.2,
         dropout: float = 0.0,
-        apply_act: bool = False,
+        scaling: float = 0.2,
+        num_heads: int = 8,
+        apply_act: bool = True,
         concat: bool = True,
         add_skip_connection: bool = True,
+        batch_norm: bool = True,
     ):
         super().__init__()
+
         self.scaling = scaling
         self.concat = concat
         self.apply_act = apply_act
         self.num_heads = num_heads
         self.n_hidden_features = n_hidden_features
-        self.n_node_features = n_node_features
         self.dropout = nn.Dropout(p=dropout)
         self.add_skip_connection = add_skip_connection
 
+        self.batch_norm = nn.Identity()
+
+        if batch_norm:
+            if concat:
+                self.batch_norm = nn.LayerNorm(n_hidden_features * num_heads)
+            else:
+                self.batch_norm = nn.LayerNorm(n_hidden_features)
+
         self.w = nn.Linear(n_node_features, n_hidden_features * num_heads)
-        self.attn = nn.Parameter(
-            torch.Tensor(1, num_heads, 2 * n_hidden_features),
-        )
-        nn.init.xavier_uniform_(self.attn.data)
+        self.attn = nn.Linear(2 * n_hidden_features, 1)
 
     def compute_attention(
         self,
@@ -355,22 +226,25 @@ class MultiHeadGATLayer(nn.Module):
         Returns:
             Attention scores for nodes.
         """
-        h = self.dropout(self.w(node_features)).view(
+        neighbors_nodes = edge_index[1]
+        target_nodes = edge_index[0]
+
+        h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
             self.num_heads,
             self.n_hidden_features,
         )
 
-        neighbors_nodes = edge_index[1]
-        target_nodes = edge_index[0]
-
-        h_i = h[target_nodes]
-        h_j = h[neighbors_nodes]
+        h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
+            -1,
+            self.num_heads,
+            self.n_hidden_features,
+        )
 
         h_concat = torch.cat([h_i, h_j], dim=-1)
 
         eij = F.leaky_relu(
-            (h_concat * self.attn).sum(dim=-1),
+            self.attn(h_concat),
             negative_slope=self.scaling,
         )
 
@@ -382,9 +256,9 @@ class MultiHeadGATLayer(nn.Module):
             ),
         )
 
-        message = attention_score.unsqueeze(-1) * h_j
+        message = attention_score * h_j
 
-        return message, h, target_nodes
+        return message, h_i, target_nodes
 
     def forward(
         self,
@@ -401,21 +275,24 @@ class MultiHeadGATLayer(nn.Module):
             Updated node features after attention.
 
         """
-        message, transformed_node_features, target_nodes = (
-            self.compute_attention(
-                node_features=node_features,
-                edge_index=edge_index,
-            )
+        (
+            message,
+            transformed_node_features,
+            target_nodes,
+        ) = self.compute_attention(
+            node_features=node_features,
+            edge_index=edge_index,
         )
+
+        if self.add_skip_connection:
+            message = message + transformed_node_features
+
         out = torch_scatter.scatter_add(
             message,
             target_nodes,
             dim=0,
-            dim_size=transformed_node_features.size(0),
+            dim_size=node_features.size(0),
         )
-
-        if self.add_skip_connection:
-            out = out + transformed_node_features
 
         if self.concat:
             out = out.view(-1, self.num_heads * self.n_hidden_features)
@@ -423,6 +300,7 @@ class MultiHeadGATLayer(nn.Module):
         else:
             out = torch.mean(out, dim=1)
 
+        out = self.batch_norm(out)
         if self.apply_act:
             out = F.elu(out)
 
