@@ -238,25 +238,43 @@ class TestGraphAttentionLayers:
             dropout=0.1,
             num_heads=num_heads,
         )
-        assert len(gat_layer.multiheadgat) == num_heads
+        assert gat_layer.attn.weight.shape == torch.Size(
+            [1, 3 * n_hidden_features],
+        )
+        assert gat_layer.w.weight.shape == torch.Size(
+            [n_hidden_features * num_heads, n_node_features],
+        )
 
-    def test_multihead_graph_edge_attention_layer_output_shape(self, smi):
+    @pytest.mark.parametrize(
+        "num_heads,n_hidden_features,concat",
+        [
+            (8, 8, True),
+            (4, 8, False),
+            (1, 8, True),
+            (2, 24, False),
+            (3, 17, True),
+        ],
+    )
+    def test_multihead_graph_edge_attention_layer_output_shape(
+        self,
+        smi,
+        num_heads,
+        n_hidden_features,
+        concat,
+    ):
         moldataset = mpnn_dataset.MPNNDataset(
             smiles=(smi,),
             targets=(1.0,),
         )
 
         input_entry = moldataset[0]
-        mol = Chem.MolFromSmiles(smi)
-        num_atoms = mol.GetNumAtoms()
-        num_bonds = mol.GetNumBonds()
 
         gat_layer = graph_attention_layers.MultiHeadEdgeGATLayer(
             n_node_features=136,
             n_edge_features=24,
-            n_hidden_features=200,
-            dropout=0.1,
-            num_heads=2,
+            n_hidden_features=n_hidden_features,
+            num_heads=num_heads,
+            concat=concat,
         )
         out_n, out_e = gat_layer(
             node_features=input_entry.node_features,
@@ -264,8 +282,16 @@ class TestGraphAttentionLayers:
             edge_index=input_entry.edge_indices,
         )
 
-        assert out_n.shape == (num_atoms, 200)
-        assert out_e.shape == (num_bonds * 2, 200)
+        if concat:
+            assert out_n.shape == (
+                input_entry.node_features.size(0),
+                num_heads * n_hidden_features,
+            )
+        else:
+            assert out_n.shape == (
+                input_entry.node_features.size(0),
+                n_hidden_features,
+            )
 
     @pytest.mark.parametrize(
         "n_node_features,n_hidden_features,num_heads",
