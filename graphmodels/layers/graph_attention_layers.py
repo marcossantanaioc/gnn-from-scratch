@@ -691,6 +691,4 @@ class EmbeddingGATEdge(nn.Module):
         if self.apply_act:
             out = F.elu(out)
 
-        print(out.shape)
-
         return out, transformed_edge_features
