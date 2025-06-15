@@ -77,7 +77,7 @@ class TestGraphAttentionLayers:
         gat_layer = graph_attention_layers.MultiHeadEdgeGATLayer(
             n_node_features=n_node_features,
             n_edge_features=n_edge_features,
-            n_hidden_features=n_hidden_features,
+            n_out_features=n_hidden_features,
             dropout=0.1,
             num_heads=num_heads,
         )
@@ -115,7 +115,7 @@ class TestGraphAttentionLayers:
         gat_layer = graph_attention_layers.MultiHeadEdgeGATLayer(
             n_node_features=136,
             n_edge_features=24,
-            n_hidden_features=n_hidden_features,
+            n_out_features=n_hidden_features,
             num_heads=num_heads,
             concat=concat,
         )
@@ -150,8 +150,8 @@ class TestGraphAttentionLayers:
         num_heads,
     ):
         gat_layer = graph_attention_layers.MultiHeadGATLayer(
-            n_node_features=n_node_features,
-            n_hidden_features=n_hidden_features,
+            n_input_features=n_node_features,
+            n_out_features=n_hidden_features,
             num_heads=num_heads,
         )
         assert gat_layer.attn.weight.shape == torch.Size(
@@ -187,8 +187,8 @@ class TestGraphAttentionLayers:
         num_atoms = Chem.MolFromSmiles(smi).GetNumAtoms()
 
         gat_layer = graph_attention_layers.MultiHeadGATLayer(
-            n_node_features=136,
-            n_hidden_features=n_hidden_features,
+            n_input_features=136,
+            n_out_features=n_hidden_features,
             num_heads=num_heads,
             concat=concat,
         )
@@ -221,7 +221,7 @@ class TestGraphAttentionLayers:
             n_node_dict=n_node_dict,
             n_edge_dict=n_edge_dict,
             embedding_dim=embedding_dim,
-            n_hidden_features=n_hidden_features,
+            n_out_features=n_hidden_features,
             num_heads=num_heads,
         )
         assert gat_layer.attn.weight.shape == torch.Size(
@@ -255,7 +255,7 @@ class TestGraphAttentionLayers:
             n_node_dict=65,
             n_edge_dict=6,
             embedding_dim=embedding_dim,
-            n_hidden_features=n_hidden_features,
+            n_out_features=n_hidden_features,
             num_heads=num_heads,
             concat=concat,
             batch_norm=False,

@@ -24,7 +24,7 @@ class MultiHeadGATLayer(nn.Module):
 
     Attributes:
         n_node_features: Number of input node features.
-        n_hidden_features: Number of hidden features.
+        n_out_features: Number of hidden features.
         scaling: Negative slope for LeakyReLU.
         num_heads: Number of attention heads.
         dropout: Dropout rate.
@@ -36,8 +36,8 @@ class MultiHeadGATLayer(nn.Module):
 
     def __init__(
         self,
-        n_node_features: int,
-        n_hidden_features: int,
+        n_input_features: int,
+        n_out_features: int,
         dropout: float = 0.0,
         scaling: float = 0.2,
         num_heads: int = 8,
@@ -52,7 +52,7 @@ class MultiHeadGATLayer(nn.Module):
         self.concat = concat
         self.apply_act = apply_act
         self.num_heads = num_heads
-        self.n_hidden_features = n_hidden_features
+        self.n_out_features = n_out_features
         self.dropout = nn.Dropout(p=dropout)
         self.add_skip_connection = add_skip_connection
 
@@ -60,12 +60,12 @@ class MultiHeadGATLayer(nn.Module):
 
         if batch_norm:
             if concat:
-                self.batch_norm = nn.LayerNorm(n_hidden_features * num_heads)
+                self.batch_norm = nn.LayerNorm(n_out_features * num_heads)
             else:
-                self.batch_norm = nn.LayerNorm(n_hidden_features)
+                self.batch_norm = nn.LayerNorm(n_out_features)
 
-        self.w = nn.Linear(n_node_features, n_hidden_features * num_heads)
-        self.attn = nn.Linear(2 * n_hidden_features, 1)
+        self.w = nn.Linear(n_input_features, n_out_features * num_heads)
+        self.attn = nn.Linear(2 * n_out_features, 1)
 
     def compute_attention(
         self,
@@ -110,13 +110,13 @@ class MultiHeadGATLayer(nn.Module):
         h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_concat = torch.cat([h_i, h_j], dim=-1)
@@ -173,7 +173,7 @@ class MultiHeadGATLayer(nn.Module):
         )
 
         if self.concat:
-            out = out.view(-1, self.num_heads * self.n_hidden_features)
+            out = out.view(-1, self.num_heads * self.n_out_features)
 
         else:
             out = torch.mean(out, dim=1)
@@ -191,7 +191,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
 
     Attributes
         n_node_features: number of input node features.
-        n_hidden_features: number of hidden features in intermediate layers.
+        n_out_features: number of hidden features in intermediate layers.
         scaling: scaling constant for LeakyRelu
     """
 
@@ -199,7 +199,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
         self,
         n_node_features: int,
         n_edge_features: int,
-        n_hidden_features: int,
+        n_out_features: int,
         dropout: float = 0.0,
         scaling: float = 0.2,
         num_heads: int = 8,
@@ -214,7 +214,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
         self.concat = concat
         self.apply_act = apply_act
         self.num_heads = num_heads
-        self.n_hidden_features = n_hidden_features
+        self.n_out_features = n_out_features
         self.dropout = nn.Dropout(p=dropout)
         self.add_skip_connection = add_skip_connection
 
@@ -222,13 +222,13 @@ class MultiHeadEdgeGATLayer(nn.Module):
 
         if batch_norm:
             if concat:
-                self.batch_norm = nn.LayerNorm(n_hidden_features * num_heads)
+                self.batch_norm = nn.LayerNorm(n_out_features * num_heads)
             else:
-                self.batch_norm = nn.LayerNorm(n_hidden_features)
+                self.batch_norm = nn.LayerNorm(n_out_features)
 
-        self.w = nn.Linear(n_node_features, n_hidden_features * num_heads)
-        self.edgew = nn.Linear(n_edge_features, n_hidden_features * num_heads)
-        self.attn = nn.Linear(3 * n_hidden_features, 1)
+        self.w = nn.Linear(n_node_features, n_out_features * num_heads)
+        self.edgew = nn.Linear(n_edge_features, n_out_features * num_heads)
+        self.attn = nn.Linear(3 * n_out_features, 1)
 
     def compute_attention(
         self,
@@ -280,7 +280,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
         edge_h = self.edgew(edge_features).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         neighbors_nodes = edge_index[1]
@@ -289,13 +289,13 @@ class MultiHeadEdgeGATLayer(nn.Module):
         h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
@@ -348,10 +348,10 @@ class MultiHeadEdgeGATLayer(nn.Module):
         )
 
         if self.concat:
-            out = out.view(-1, self.num_heads * self.n_hidden_features)
+            out = out.view(-1, self.num_heads * self.n_out_features)
             transformed_edge_features = transformed_edge_features.view(
                 -1,
-                self.num_heads * self.n_hidden_features,
+                self.num_heads * self.n_out_features,
             )
 
         else:
@@ -376,7 +376,7 @@ class EmbeddingGATEdge(nn.Module):
 
     Attributes:
         n_node_features: Number of input node features.
-        n_hidden_features: Number of hidden features in intermediate layers.
+        n_out_features: Number of hidden features in intermediate layers.
         scaling: Scaling constant for the LeakyReLU activation.
     """
 
@@ -385,7 +385,7 @@ class EmbeddingGATEdge(nn.Module):
         n_node_dict: int,
         n_edge_dict: int,
         embedding_dim: int,
-        n_hidden_features: int,
+        n_out_features: int,
         num_heads: int = 1,
         scaling: float = 0.2,
         dropout: float = 0.0,
@@ -399,23 +399,23 @@ class EmbeddingGATEdge(nn.Module):
         self.concat = concat
         self.apply_act = apply_act
         self.num_heads = num_heads
-        self.n_hidden_features = n_hidden_features
+        self.n_out_features = n_out_features
         self.dropout = nn.Dropout(p=dropout)
         self.add_skip_connection = add_skip_connection
 
         self.batch_norm = nn.Identity()
         if batch_norm:
             if concat:
-                self.batch_norm = nn.LayerNorm(n_hidden_features * num_heads)
+                self.batch_norm = nn.LayerNorm(n_out_features * num_heads)
             else:
-                self.batch_norm = nn.LayerNorm(n_hidden_features)
+                self.batch_norm = nn.LayerNorm(n_out_features)
 
         self.node_embedding = nn.Embedding(n_node_dict, embedding_dim)
         self.edge_embedding = nn.Embedding(n_edge_dict, embedding_dim)
 
-        self.w = nn.Linear(embedding_dim, n_hidden_features * num_heads)
-        self.edgew = nn.Linear(embedding_dim, n_hidden_features * num_heads)
-        self.attn = nn.Linear(3 * n_hidden_features, 1)
+        self.w = nn.Linear(embedding_dim, n_out_features * num_heads)
+        self.edgew = nn.Linear(embedding_dim, n_out_features * num_heads)
+        self.attn = nn.Linear(3 * n_out_features, 1)
 
     def compute_attention(
         self,
@@ -467,7 +467,7 @@ class EmbeddingGATEdge(nn.Module):
         edge_h = self.edgew(edge_features).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         neighbors_nodes = edge_index[1]
@@ -476,13 +476,13 @@ class EmbeddingGATEdge(nn.Module):
         h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_concat = torch.cat([h_i, h_j, edge_h], dim=-1)
@@ -541,10 +541,10 @@ class EmbeddingGATEdge(nn.Module):
         )
 
         if self.concat:
-            out = out.view(-1, self.num_heads * self.n_hidden_features)
+            out = out.view(-1, self.num_heads * self.n_out_features)
             transformed_edge_features = transformed_edge_features.view(
                 -1,
-                self.num_heads * self.n_hidden_features,
+                self.num_heads * self.n_out_features,
             )
 
         else:
@@ -566,7 +566,7 @@ class EmbeddingGATEdgeV2(nn.Module):
 
     Attributes
         n_node_features: number of input node features.
-        n_hidden_features: number of hidden features in intermediate layers.
+        n_out_features: number of hidden features in intermediate layers.
         scaling: scaling constant for LeakyRelu
     """
 
@@ -575,7 +575,7 @@ class EmbeddingGATEdgeV2(nn.Module):
         n_node_dict: int,
         n_edge_dict: int,
         embedding_dim: int,
-        n_hidden_features: int,
+        n_out_features: int,
         num_heads: int = 1,
         scaling: float = 0.2,
         dropout: float = 0.0,
@@ -589,21 +589,21 @@ class EmbeddingGATEdgeV2(nn.Module):
         self.concat = concat
         self.apply_act = apply_act
         self.num_heads = num_heads
-        self.n_hidden_features = n_hidden_features
+        self.n_out_features = n_out_features
         self.dropout = nn.Dropout(p=dropout)
         self.add_skip_connection = add_skip_connection
 
         self.batch_norm = nn.Identity()
 
         if batch_norm:
-            self.batch_norm = nn.LayerNorm(n_hidden_features * num_heads)
+            self.batch_norm = nn.LayerNorm(n_out_features * num_heads)
 
         self.node_embedding = nn.Embedding(n_node_dict, embedding_dim)
         self.edge_embedding = nn.Embedding(n_edge_dict, embedding_dim)
 
-        self.w = nn.Linear(2 * embedding_dim, n_hidden_features * num_heads)
-        self.edgew = nn.Linear(embedding_dim, n_hidden_features * num_heads)
-        self.attn = nn.Linear(2 * n_hidden_features, 1)
+        self.w = nn.Linear(2 * embedding_dim, n_out_features * num_heads)
+        self.edgew = nn.Linear(embedding_dim, n_out_features * num_heads)
+        self.attn = nn.Linear(2 * n_out_features, 1)
 
     def compute_attention(
         self,
@@ -647,7 +647,7 @@ class EmbeddingGATEdgeV2(nn.Module):
         edge_h = self.edgew(edge_features).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         neighbors_nodes = edge_index[1]
@@ -659,7 +659,7 @@ class EmbeddingGATEdgeV2(nn.Module):
         h = self.dropout(self.w(torch.cat([h_i, h_j], dim=-1))).view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         h_concat = F.leaky_relu(
@@ -679,12 +679,12 @@ class EmbeddingGATEdgeV2(nn.Module):
         message = attention_score * h_j.view(
             -1,
             self.num_heads,
-            self.n_hidden_features,
+            self.n_out_features,
         )
 
         return (
             message,
-            h_i.view(-1, self.num_heads, self.n_hidden_features),
+            h_i.view(-1, self.num_heads, self.n_out_features),
             edge_h,
             target_nodes,
         )
@@ -726,10 +726,10 @@ class EmbeddingGATEdgeV2(nn.Module):
         )
 
         if self.concat:
-            out = out.view(-1, self.num_heads * self.n_hidden_features)
+            out = out.view(-1, self.num_heads * self.n_out_features)
             transformed_edge_features = transformed_edge_features.view(
                 -1,
-                self.num_heads * self.n_hidden_features,
+                self.num_heads * self.n_out_features,
             )
 
         else:

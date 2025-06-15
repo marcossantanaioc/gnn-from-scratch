@@ -77,8 +77,8 @@ class TestGATModels:
         # Create an instance of the GAT
         model = gat.GATModel(
             n_hidden_features=h_features,
-            n_node_features=n_feats,
-            n_out_channels=out_units,
+            n_input_features=n_feats,
+            n_out_features=out_units,
             num_layers=num_layers,
             num_heads=heads,
             scaling=0.2,
