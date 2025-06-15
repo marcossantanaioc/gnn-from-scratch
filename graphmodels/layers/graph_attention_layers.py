@@ -45,6 +45,7 @@ class MultiHeadGATLayer(nn.Module):
         concat: bool = True,
         add_skip_connection: bool = True,
         batch_norm: bool = True,
+        add_bias: bool = False,
     ):
         super().__init__()
 
@@ -65,7 +66,8 @@ class MultiHeadGATLayer(nn.Module):
                 self.batch_norm = nn.LayerNorm(n_out_features)
 
         self.w = nn.Linear(n_input_features, n_out_features * num_heads)
-        self.attn = nn.Linear(2 * n_out_features, 1)
+
+        self.attn = nn.Linear(2 * n_out_features, 1, bias=add_bias)
 
     def compute_attention(
         self,
@@ -99,8 +101,8 @@ class MultiHeadGATLayer(nn.Module):
             node_features: input node features (shape=N, F)
             where N is the number of nodes and F the number of features.
             edge_index: graph connectivity in COO format with shape (2, E),
-                where E is the number of edges. The first row contains target
-                node indices, and the second row contains source node indices.
+                where E is the number of edges. The first row contains source
+                node indices, and the second row contains target node indices.
         Returns:
             Attention scores for nodes.
         """
@@ -266,8 +268,8 @@ class MultiHeadEdgeGATLayer(nn.Module):
             edge_features: Input edge features with shape (E, F),
                 where E is the number of edges.
             edge_index: Graph connectivity in COO format with shape (2, E),
-                where the first row contains target node indices and
-                the second row contains source node indices.
+                where the first row contains source node indices and
+                the second row contains target node indices.
 
         Returns:
             A tuple containing:
@@ -453,8 +455,8 @@ class EmbeddingGATEdge(nn.Module):
             edge_features: Input edge features with shape (E, F),
                 where E is the number of edges.
             edge_index: Graph connectivity in COO format with shape (2, E),
-                where the first row contains target node indices and
-                the second row contains source node indices.
+                where the first row contains source node indices and
+                the second row contains target node indices.
 
         Returns:
             A tuple containing:
@@ -638,8 +640,8 @@ class EmbeddingGATEdgeV2(nn.Module):
             node_features: input node features (shape=N, F)
             where N is the number of nodes and F the number of features.
             edge_index: graph connectivity in COO format with shape (2, E),
-                where E is the number of edges. The first row contains target
-                node indices, and the second row contains source node indices.
+                where E is the number of edges. The first row contains source
+                node indices, and the second row contains target node indices.
         Returns:
             Attention scores for nodes.
         """
