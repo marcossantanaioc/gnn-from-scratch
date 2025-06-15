@@ -44,7 +44,7 @@ class MultiHeadGATLayer(nn.Module):
         apply_act: bool = True,
         concat: bool = True,
         add_skip_connection: bool = True,
-        batch_norm: bool = True,
+        batch_norm: bool = False,
         add_bias: bool = False,
     ):
         super().__init__()
@@ -56,8 +56,6 @@ class MultiHeadGATLayer(nn.Module):
         self.n_out_features = n_out_features
         self.dropout = nn.Dropout(p=dropout)
         self.add_skip_connection = add_skip_connection
-
-        self.batch_norm = nn.Identity()
 
         if batch_norm:
             if concat:
@@ -180,7 +178,9 @@ class MultiHeadGATLayer(nn.Module):
         else:
             out = torch.mean(out, dim=1)
 
-        out = self.batch_norm(out)
+        if self.batch_norm:
+            out = self.batch_norm(out)
+
         if self.apply_act:
             out = F.elu(out)
 
