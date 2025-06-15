@@ -104,8 +104,8 @@ class MultiHeadGATLayer(nn.Module):
         Returns:
             Attention scores for nodes.
         """
-        neighbors_nodes = edge_index[1]
-        target_nodes = edge_index[0]
+        neighbors_nodes = edge_index[0]
+        target_nodes = edge_index[1]
 
         h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
@@ -283,8 +283,8 @@ class MultiHeadEdgeGATLayer(nn.Module):
             self.n_out_features,
         )
 
-        neighbors_nodes = edge_index[1]
-        target_nodes = edge_index[0]
+        neighbors_nodes = edge_index[0]
+        target_nodes = edge_index[1]
 
         h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
@@ -470,8 +470,8 @@ class EmbeddingGATEdge(nn.Module):
             self.n_out_features,
         )
 
-        neighbors_nodes = edge_index[1]
-        target_nodes = edge_index[0]
+        neighbors_nodes = edge_index[0]
+        target_nodes = edge_index[1]
 
         h_i = self.dropout(self.w(node_features[target_nodes])).view(
             -1,
@@ -650,8 +650,8 @@ class EmbeddingGATEdgeV2(nn.Module):
             self.n_out_features,
         )
 
-        neighbors_nodes = edge_index[1]
-        target_nodes = edge_index[0]
+        neighbors_nodes = edge_index[0]
+        target_nodes = edge_index[1]
 
         h_i = node_features[target_nodes]
         h_j = node_features[neighbors_nodes]
