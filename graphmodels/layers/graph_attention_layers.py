@@ -373,6 +373,10 @@ class MultiHeadEdgeGATLayer(nn.Module):
 
         else:
             out = torch.mean(out, dim=1)
+            transformed_edge_features = torch.mean(
+                transformed_edge_features,
+                dim=1,
+            )
 
         out = self.batch_norm(out)
         transformed_edge_features = self.batch_norm(transformed_edge_features)

@@ -133,9 +133,20 @@ class TestGraphAttentionLayers:
                 input_entry.node_features.size(0),
                 num_heads * n_hidden_features,
             )
+
+            assert out_e.shape == (
+                input_entry.edge_features.size(0),
+                n_hidden_features * num_heads,
+            )
+
         else:
             assert out_n.shape == (
                 input_entry.node_features.size(0),
+                n_hidden_features,
+            )
+
+            assert out_e.shape == (
+                input_entry.edge_features.size(0),
                 n_hidden_features,
             )
 
