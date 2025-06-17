@@ -46,6 +46,7 @@ class MultiHeadGATLayer(nn.Module):
         add_skip_connection: bool = True,
         batch_norm: bool = False,
         add_bias: bool = False,
+        share_weights: bool = True,
     ):
         super().__init__()
 
@@ -64,7 +65,15 @@ class MultiHeadGATLayer(nn.Module):
             else:
                 self.norm = nn.LayerNorm(n_out_features)
 
-        self.w = nn.Linear(n_input_features, n_out_features * num_heads)
+        self.target_w = nn.Linear(n_input_features, n_out_features * num_heads)
+
+        if share_weights:
+            self.neighbor_w = self.target_w
+        else:
+            self.neighbor_w = nn.Linear(
+                n_input_features,
+                n_out_features * num_heads,
+            )
 
         self.attn = nn.Linear(2 * n_out_features, 1, bias=add_bias)
 
@@ -75,7 +84,6 @@ class MultiHeadGATLayer(nn.Module):
     ) -> tuple[
         Float[torch.Tensor, "attention_score 1"],  # noqa: F722
         Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
-        Int[torch.Tensor, " target_index"],
     ]:
         """Computes attention score between nodes i and j.
 
@@ -108,13 +116,13 @@ class MultiHeadGATLayer(nn.Module):
         neighbors_nodes = edge_index[0]
         target_nodes = edge_index[1]
 
-        h_i = self.dropout(self.w(node_features[target_nodes])).view(
+        h_i = self.target_w(node_features[target_nodes]).view(
             -1,
             self.num_heads,
             self.n_out_features,
         )
 
-        h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
+        h_j = self.neighbor_w(node_features[neighbors_nodes]).view(
             -1,
             self.num_heads,
             self.n_out_features,
@@ -137,7 +145,7 @@ class MultiHeadGATLayer(nn.Module):
 
         message = attention_score * h_j
 
-        return message, h_i, target_nodes
+        return message, h_i
 
     def forward(
         self,
@@ -157,7 +165,6 @@ class MultiHeadGATLayer(nn.Module):
         (
             message,
             transformed_node_features,
-            target_nodes,
         ) = self.compute_attention(
             node_features=node_features,
             edge_index=edge_index,
@@ -168,7 +175,7 @@ class MultiHeadGATLayer(nn.Module):
 
         out = torch_scatter.scatter_add(
             message,
-            target_nodes,
+            edge_index[1],
             dim=0,
             dim_size=node_features.size(0),
         )
@@ -210,6 +217,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
         concat: bool = True,
         add_skip_connection: bool = True,
         batch_norm: bool = True,
+        share_weights: bool = True,
     ):
         super().__init__()
 
@@ -229,7 +237,15 @@ class MultiHeadEdgeGATLayer(nn.Module):
             else:
                 self.batch_norm = nn.LayerNorm(n_out_features)
 
-        self.w = nn.Linear(n_node_features, n_out_features * num_heads)
+        self.target_w = nn.Linear(n_node_features, n_out_features * num_heads)
+
+        if share_weights:
+            self.neighbor_w = self.target_w
+        else:
+            self.neighbor_w = nn.Linear(
+                n_node_features,
+                n_out_features * num_heads,
+            )
         self.edgew = nn.Linear(n_edge_features, n_out_features * num_heads)
         self.attn = nn.Linear(3 * n_out_features, 1)
 
@@ -242,7 +258,6 @@ class MultiHeadEdgeGATLayer(nn.Module):
         Float[torch.Tensor, "attention_score 1"],  # noqa: F722
         Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
         Float[torch.Tensor, "edges hidden_features"],  # noqa: F722
-        Int[torch.Tensor, " target_index"],
     ]:
         """Computes attention scores between connected nodes.
 
@@ -289,13 +304,13 @@ class MultiHeadEdgeGATLayer(nn.Module):
         neighbors_nodes = edge_index[0]
         target_nodes = edge_index[1]
 
-        h_i = self.dropout(self.w(node_features[target_nodes])).view(
+        h_i = self.target_w(node_features[target_nodes]).view(
             -1,
             self.num_heads,
             self.n_out_features,
         )
 
-        h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
+        h_j = self.neighbor_w(node_features[neighbors_nodes]).view(
             -1,
             self.num_heads,
             self.n_out_features,
@@ -318,7 +333,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
 
         message = attention_score * h_j
 
-        return message, h_i, edge_h, target_nodes
+        return message, h_i, edge_h
 
     def forward(
         self,
@@ -333,7 +348,6 @@ class MultiHeadEdgeGATLayer(nn.Module):
             message,
             transformed_node_features,
             transformed_edge_features,
-            target_nodes,
         ) = self.compute_attention(
             node_features=node_features,
             edge_features=edge_features,
@@ -345,7 +359,7 @@ class MultiHeadEdgeGATLayer(nn.Module):
 
         out = torch_scatter.scatter_add(
             message,
-            target_nodes,
+            edge_index[1],
             dim=0,
             dim_size=node_features.size(0),
         )
@@ -396,6 +410,7 @@ class EmbeddingGATEdge(nn.Module):
         concat: bool = True,
         add_skip_connection: bool = True,
         batch_norm: bool = True,
+        share_weights: bool = True,
     ):
         super().__init__()
         self.scaling = scaling
@@ -416,7 +431,16 @@ class EmbeddingGATEdge(nn.Module):
         self.node_embedding = nn.Embedding(n_node_dict, embedding_dim)
         self.edge_embedding = nn.Embedding(n_edge_dict, embedding_dim)
 
-        self.w = nn.Linear(embedding_dim, n_out_features * num_heads)
+        self.target_w = nn.Linear(embedding_dim, n_out_features * num_heads)
+
+        if share_weights:
+            self.neighbor_w = self.target_w
+        else:
+            self.neighbor_w = nn.Linear(
+                embedding_dim,
+                n_out_features * num_heads,
+            )
+
         self.edgew = nn.Linear(embedding_dim, n_out_features * num_heads)
         self.attn = nn.Linear(3 * n_out_features, 1)
 
@@ -429,7 +453,6 @@ class EmbeddingGATEdge(nn.Module):
         Float[torch.Tensor, "attention_score 1"],  # noqa: F722
         Float[torch.Tensor, "nodes hidden_features"],  # noqa: F722
         Float[torch.Tensor, "edges hidden_features"],  # noqa: F722
-        Int[torch.Tensor, " target_index"],
     ]:
         """Computes attention scores between connected nodes.
 
@@ -464,7 +487,6 @@ class EmbeddingGATEdge(nn.Module):
                 - Message after applying attention to node features.
                 - Transformed node features.
                 - Transformed edge features.
-                - Indices of target nodes.
         """
 
         edge_h = self.edgew(edge_features).view(
@@ -476,13 +498,13 @@ class EmbeddingGATEdge(nn.Module):
         neighbors_nodes = edge_index[0]
         target_nodes = edge_index[1]
 
-        h_i = self.dropout(self.w(node_features[target_nodes])).view(
+        h_i = self.target_w(node_features[target_nodes]).view(
             -1,
             self.num_heads,
             self.n_out_features,
         )
 
-        h_j = self.dropout(self.w(node_features[neighbors_nodes])).view(
+        h_j = self.neighbor_w(node_features[neighbors_nodes]).view(
             -1,
             self.num_heads,
             self.n_out_features,
@@ -505,7 +527,7 @@ class EmbeddingGATEdge(nn.Module):
 
         message = attention_score * h_j
 
-        return message, h_i, edge_h, target_nodes
+        return message, h_i, edge_h
 
     def forward(
         self,
@@ -526,7 +548,6 @@ class EmbeddingGATEdge(nn.Module):
             message,
             transformed_node_features,
             transformed_edge_features,
-            target_nodes,
         ) = self.compute_attention(
             node_features=node_features,
             edge_features=edge_features,
@@ -538,7 +559,7 @@ class EmbeddingGATEdge(nn.Module):
 
         out = torch_scatter.scatter_add(
             message,
-            target_nodes,
+            edge_index[1],
             dim=0,
             dim_size=node_features.size(0),
         )

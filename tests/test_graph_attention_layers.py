@@ -84,7 +84,10 @@ class TestGraphAttentionLayers:
         assert gat_layer.attn.weight.shape == torch.Size(
             [1, 3 * n_hidden_features],
         )
-        assert gat_layer.w.weight.shape == torch.Size(
+        assert gat_layer.target_w.weight.shape == torch.Size(
+            [n_hidden_features * num_heads, n_node_features],
+        )
+        assert gat_layer.neighbor_w.weight.shape == torch.Size(
             [n_hidden_features * num_heads, n_node_features],
         )
 
@@ -157,7 +160,10 @@ class TestGraphAttentionLayers:
         assert gat_layer.attn.weight.shape == torch.Size(
             [1, 2 * n_hidden_features],
         )
-        assert gat_layer.w.weight.shape == torch.Size(
+        assert gat_layer.target_w.weight.shape == torch.Size(
+            [n_hidden_features * num_heads, n_node_features],
+        )
+        assert gat_layer.neighbor_w.weight.shape == torch.Size(
             [n_hidden_features * num_heads, n_node_features],
         )
 
@@ -227,7 +233,10 @@ class TestGraphAttentionLayers:
         assert gat_layer.attn.weight.shape == torch.Size(
             [1, 3 * n_hidden_features],
         )
-        assert gat_layer.w.weight.shape == torch.Size(
+        assert gat_layer.target_w.weight.shape == torch.Size(
+            [n_hidden_features * num_heads, embedding_dim],
+        )
+        assert gat_layer.neighbor_w.weight.shape == torch.Size(
             [n_hidden_features * num_heads, embedding_dim],
         )
 
