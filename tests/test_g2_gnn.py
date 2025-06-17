@@ -4,7 +4,7 @@ from graphmodels.datasets import mpnn_dataset
 from graphmodels.layers import g2_gnn, graph_attention_layers
 
 
-class TestGraphAttentionLayers:
+class TestG2GNNLayer:
     """Pytests"""
 
     @pytest.fixture
