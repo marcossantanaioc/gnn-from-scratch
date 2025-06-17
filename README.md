@@ -12,5 +12,6 @@ This repository contains **from-scratch implementations** of foundational Graph 
 | Neural Fingerprints (NFP) | [Duvenaud et al., 2015](https://arxiv.org/abs/1509.09292) | ✅ |
 | Message Passing Neural Network (MPNN) | [Gilmer et al., 2017](https://arxiv.org/abs/1704.01212) | ✅ |
 | Graph Attention Layer (GAT) | [Veličković et al., 2017](https://arxiv.org/abs/1710.10903) | ✅ |
+| Gradient Gating For Deep Multi-rate Learning On Graphs | [Rusch et al., 2023](https://arxiv.org/abs/2210.00513) | ✅ |
 
 > ✅ = Implemented
