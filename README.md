@@ -13,6 +13,6 @@ This repository contains **from-scratch implementations** of foundational Graph 
 | Message Passing Neural Network (MPNN) | [Gilmer et al., 2017](https://arxiv.org/abs/1704.01212) | ✅ |
 | Graph Attention Layer (GAT) | [Veličković et al., 2017](https://arxiv.org/abs/1710.10903) | ✅ |
 | Gradient Gating For Deep Multi-rate Learning On Graphs | [Rusch et al., 2023](https://arxiv.org/abs/2210.00513) | ✅ |
-| Graph Isomorphism Network (GIN) | [Rusch et al., 2023](https://arxiv.org/abs/1810.00826) | ✅ |
+| Graph Isomorphism Network (GIN) | [Xu et al., 2019](https://arxiv.org/abs/1810.00826) | ✅ |
 
 > ✅ = Implemented
